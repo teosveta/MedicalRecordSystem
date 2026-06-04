@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пациент — Медицинска система</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar navbar-dark mb-3">
+    <div class="container-fluid">
+        <span class="navbar-brand fw-bold">Медицинска система</span>
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-white small" id="user-email"></span>
+            <button class="btn btn-outline-light btn-sm" onclick="logout()">Изход</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid px-4">
+    <div id="main-error" class="alert alert-danger d-none mb-3"></div>
+
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#history-tab" type="button">
+                Моето медицинско досие
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sick-tab" type="button">
+                Болнични листове
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-tab" type="button">
+                Моят профил
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+
+        <!-- Медицинско досие -->
+        <div class="tab-pane fade show active" id="history-tab">
+            <div class="card">
+                <div class="card-header">Моето медицинско досие</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Дата</th>
+                                <th>Лекар</th>
+                                <th>Диагноза</th>
+                                <th>Лечение</th>
+                                <th>Цена</th>
+                                <th>Плащане</th>
+                                <th>Моя бележка</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody id="exams-tbody">
+                            <tr><td colspan="9" class="text-center text-muted py-3">Зареждане...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Болнични листове -->
+        <div class="tab-pane fade" id="sick-tab">
+            <div class="card">
+                <div class="card-header">Болнични листове</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Начална дата</th>
+                                <th>Брой дни</th>
+                                <th>Лекар</th>
+                                <th>Свързан преглед</th>
+                            </tr>
+                            </thead>
+                            <tbody id="sick-tbody">
+                            <tr><td colspan="5" class="text-center text-muted py-3">Зареждане...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Моят профил -->
+        <div class="tab-pane fade" id="profile-tab">
+            <div class="card">
+                <div class="card-header">Моят профил</div>
+                <div class="card-body">
+                    <div id="profile-info">
+                        <p class="text-muted">Зареждане...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ===== Модал: Бележка към преглед ===== -->
+<div class="modal fade" id="noteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Бележка към преглед</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="note-error" class="alert alert-danger d-none"></div>
+                <input type="hidden" id="note-exam-id">
+                <div class="mb-2">
+                    <label class="form-label">Бележка (максимум 500 символа)</label>
+                    <textarea class="form-control" id="note-text" rows="4" maxlength="500"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отказ</button>
+                <button type="button" class="btn btn-primary" onclick="submitNote()">Запази</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+    checkAuth('PATIENT');
+    document.getElementById('user-email').textContent = localStorage.getItem('user_email') || '';
+
+    async function loadHistory() {
+        const response = await fetch('/api/patient/history', {headers: authHeaders()});
+        if (!response.ok) {
+            if (response.status === 401) { logout(); return; }
+            const err = await getErrorMessage(response);
+            showError('main-error', err);
+            return;
+        }
+        const data = await response.json();
+        renderExams(data.examinations || []);
+        renderSickLeaves(data.sickLeaves || []);
+        renderProfile(data.patient);
+    }
+
+    let examsCache = [];
+
+    function renderExams(exams) {
+        examsCache = exams;
+        const tbody = document.getElementById('exams-tbody');
+        if (!exams.length) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">Нямате прегледи</td></tr>';
+            return;
+        }
+        tbody.innerHTML = exams.map((e, i) => `
+            <tr>
+                <td>${i + 1}</td>
+                <td>${e.examinationDate}</td>
+                <td>${e.doctorName}</td>
+                <td><strong>${e.diagnosisCode}</strong> — ${e.diagnosisName}</td>
+                <td>${e.treatment}</td>
+                <td class="fw-semibold">${e.price} лв.</td>
+                <td>${e.paidByPatient
+                    ? '<span class="badge bg-warning text-dark">Пациент</span>'
+                    : '<span class="badge bg-success">НЗОК</span>'}</td>
+                <td id="note-cell-${e.id}">${e.patientNote
+                    ? `<span class="text-muted small" style="white-space:pre-wrap">${e.patientNote}</span>`
+                    : '<span class="text-muted small fst-italic">Няма бележка</span>'}</td>
+                <td>
+                    <button class="btn btn-outline-secondary btn-xs"
+                            onclick="openNoteModal(${e.id})">
+                        ${e.patientNote ? 'Редактирай' : 'Добави'} бележка
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function openNoteModal(examId) {
+        const exam = examsCache.find(e => e.id === examId);
+        document.getElementById('note-exam-id').value = examId;
+        document.getElementById('note-text').value = exam ? (exam.patientNote || '') : '';
+        hideError('note-error');
+        new bootstrap.Modal(document.getElementById('noteModal')).show();
+    }
+
+    async function submitNote() {
+        hideError('note-error');
+        const examId = document.getElementById('note-exam-id').value;
+        const note = document.getElementById('note-text').value.trim();
+
+        const r = await fetch(`/api/examinations/${examId}/patient-note`, {
+            method: 'PUT',
+            headers: authHeaders(),
+            body: JSON.stringify({note})
+        });
+
+        if (!r.ok) {
+            if (r.status === 401) { logout(); return; }
+            showError('note-error', await getErrorMessage(r));
+            return;
+        }
+
+        const updated = await r.json();
+        // Актуализираме кеша
+        const idx = examsCache.findIndex(e => e.id === parseInt(examId));
+        if (idx !== -1) examsCache[idx].patientNote = updated.patientNote;
+        // Обновяваме клетката директно
+        const cell = document.getElementById(`note-cell-${examId}`);
+        if (cell) {
+            cell.innerHTML = updated.patientNote
+                ? `<span class="text-muted small" style="white-space:pre-wrap">${updated.patientNote}</span>`
+                : '<span class="text-muted small fst-italic">Няма бележка</span>';
+        }
+        bootstrap.Modal.getInstance(document.getElementById('noteModal')).hide();
+    }
+
+    function renderSickLeaves(leaves) {
+        const tbody = document.getElementById('sick-tbody');
+        if (!leaves.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Нямате болнични листове</td></tr>';
+            return;
+        }
+        tbody.innerHTML = leaves.map((l, i) => `
+            <tr>
+                <td>${i + 1}</td>
+                <td>${l.startDate}</td>
+                <td>${l.numberOfDays} дни</td>
+                <td>${l.doctorName}</td>
+                <td>Преглед #${l.examinationId}</td>
+            </tr>
+        `).join('');
+    }
+
+    function renderProfile(patient) {
+        if (!patient) return;
+        document.getElementById('profile-info').innerHTML = `
+            <dl class="row">
+                <dt class="col-sm-3">Пълно име</dt>
+                <dd class="col-sm-9 fw-semibold">${patient.firstName} ${patient.lastName}</dd>
+
+                <dt class="col-sm-3">ЕГН</dt>
+                <dd class="col-sm-9">${patient.egn}</dd>
+
+                <dt class="col-sm-3">Личен лекар</dt>
+                <dd class="col-sm-9">${patient.personalDoctorName
+            ? patient.personalDoctorName
+            : '<span class="text-muted">Няма назначен</span>'}</dd>
+
+                <dt class="col-sm-3">Здравно осигуряване</dt>
+                <dd class="col-sm-9">
+                    ${patient.healthInsured
+            ? '<span class="badge bg-success fs-6">Осигурен</span>'
+            : '<span class="badge bg-danger fs-6">Неосигурен</span>'}
+                </dd>
+
+                <dt class="col-sm-3">Имейл</dt>
+                <dd class="col-sm-9">${patient.email || '—'}</dd>
+            </dl>
+        `;
+    }
+
+    loadHistory();
+</script>
+</body>
+</html>

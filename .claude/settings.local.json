@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\velko\\\\IdeaProjects\\\\MedicalRecordSystem\" -ErrorAction SilentlyContinue; if \\(-not \\(Test-Path \"C:\\\\Users\\\\velko\\\\IdeaProjects\\\\MedicalRecordSystem\"\\)\\) { Write-Output \"Директорията не съществува - ще я създадем\" })",
+      "PowerShell(mvn *)",
+      "PowerShell(New-Item *)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\velko\\\\.jdks\\\\ms-21.0.11\"; cd \"C:\\\\Users\\\\velko\\\\IdeaProjects\\\\MedicalRecordSystem\"; .\\\\mvnw.cmd clean compile 2>&1)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\velko\\\\.jdks\\\\ms-21.0.11\"; $env:PATH = \"$env:JAVA_HOME\\\\bin;$env:PATH\"; & \"C:\\\\Users\\\\velko\\\\.jdks\\\\ms-21.0.11\\\\bin\\\\java.exe\" -version 2>&1)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\velko\\\\.jdks\\\\ms-21.0.11\"; $env:PATH = \"$env:JAVA_HOME\\\\bin;$env:PATH\"; & \"C:\\\\Users\\\\velko\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.8\\\\apache-maven-3.9.8\\\\bin\\\\mvn.cmd\" -f \"C:\\\\Users\\\\velko\\\\IdeaProjects\\\\MedicalRecordSystem\\\\pom.xml\" clean compile 2>&1)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\velko\\\\.jdks\\\\ms-21.0.11\"; & \"C:\\\\Users\\\\velko\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.8\\\\apache-maven-3.9.8\\\\bin\\\\mvn.cmd\" -f \"C:\\\\Users\\\\velko\\\\IdeaProjects\\\\MedicalRecordSystem\\\\pom.xml\" clean compile -q 2>&1)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\velko\\\\.jdks\\\\ms-21.0.11\"; & \"C:\\\\Users\\\\velko\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.8\\\\apache-maven-3.9.8\\\\bin\\\\mvn.cmd\" -f \"C:\\\\Users\\\\velko\\\\IdeaProjects\\\\MedicalRecordSystem\\\\pom.xml\" clean compile 2>&1 | Select-Object -Last 5)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\velko\\\\.jdks\\\\ms-21.0.11\"; & \"C:\\\\Users\\\\velko\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.8\\\\apache-maven-3.9.8\\\\bin\\\\mvn.cmd\" -f \"C:\\\\Users\\\\velko\\\\IdeaProjects\\\\MedicalRecordSystem\\\\pom.xml\" clean compile -q 2>&1 | Select-Object -Last 30)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\velko\\\\.jdks\\\\ms-21.0.11\"; & \"C:\\\\Users\\\\velko\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.8\\\\apache-maven-3.9.8\\\\bin\\\\mvn.cmd\" -f \"C:\\\\Users\\\\velko\\\\IdeaProjects\\\\MedicalRecordSystem\\\\pom.xml\" clean compile 2>&1 | Select-Object -Last 20)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\velko\\\\.jdks\\\\ms-21.0.11\"; & \"C:\\\\Users\\\\velko\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.8\\\\apache-maven-3.9.8\\\\bin\\\\mvn.cmd\" -f \"C:\\\\Users\\\\velko\\\\IdeaProjects\\\\MedicalRecordSystem\\\\pom.xml\" test 2>&1 | Select-Object -Last 40)",
+      "Bash(.\\\\mvnw.cmd clean *)",
+      "PowerShell(Test-Path *)",
+      "PowerShell($mvn = \"$env:USERPROFILE\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.8\\\\apache-maven-3.9.8\\\\bin\\\\mvn.cmd\"; Set-Location \"C:\\\\Users\\\\velko\\\\IdeaProjects\\\\MedicalRecordSystem\"; & $mvn clean compile 2>&1 | Select-Object -Last 25)",
+      "PowerShell(Get-Command *)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\velko\\\\.jdks\\\\ms-21.0.11\"; $mvn = \"$env:USERPROFILE\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.8\\\\apache-maven-3.9.8\\\\bin\\\\mvn.cmd\"; Set-Location \"C:\\\\Users\\\\velko\\\\IdeaProjects\\\\MedicalRecordSystem\"; & $mvn clean compile 2>&1 | Select-Object -Last 25)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\velko\\\\.jdks\\\\ms-21.0.11\"; $mvn = \"$env:USERPROFILE\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.8\\\\apache-maven-3.9.8\\\\bin\\\\mvn.cmd\"; Set-Location \"C:\\\\Users\\\\velko\\\\IdeaProjects\\\\MedicalRecordSystem\"; & $mvn test 2>&1 | Select-Object -Last 30)",
+      "Bash(\"C:\\\\Users\\\\velko\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.8\\\\apache-maven-3.9.8\\\\bin\\\\mvn.cmd\" clean *)",
+      "Bash(JAVA_HOME=\"C:\\\\Users\\\\velko\\\\.jdks\\\\ms-21.0.11\" \"C:\\\\Users\\\\velko\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.8\\\\apache-maven-3.9.8\\\\bin\\\\mvn.cmd\" clean compile -q)",
+      "Bash(JAVA_HOME=\"C:\\\\Users\\\\velko\\\\.jdks\\\\ms-21.0.11\" \"C:\\\\Users\\\\velko\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.8\\\\apache-maven-3.9.8\\\\bin\\\\mvn.cmd\" test)"
+    ]
+  }
+}

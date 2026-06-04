@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход — Медицинска система</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body class="bg-light d-flex align-items-center min-vh-100">
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-5 col-lg-4">
+            <div class="text-center mb-4">
+                <h2 class="fw-bold text-primary">Медицинска система</h2>
+                <p class="text-muted small">Управление на медицинска документация</p>
+            </div>
+            <div class="card shadow login-card">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4">Вход в системата</h5>
+                    <div id="login-error" class="alert alert-danger d-none" role="alert"></div>
+                    <form id="login-form">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Имейл адрес</label>
+                            <input type="email" class="form-control" id="email"
+                                   placeholder="потребител@example.com" required autofocus>
+                        </div>
+                        <div class="mb-4">
+                            <label for="password" class="form-label">Парола</label>
+                            <input type="password" class="form-control" id="password"
+                                   placeholder="••••••••" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100" id="login-btn">Вход</button>
+                    </form>
+                </div>
+            </div>
+            <p class="text-center mt-3 mb-1">
+                <a href="/register" class="small">Нямате профил? Регистрирайте се</a>
+            </p>
+            <p class="text-center text-muted mt-1 small">
+                Тестови акаунти (парола: <strong>Az1234!</strong>):
+                admin@medical.com &nbsp;|&nbsp; d.petrov@medical.com &nbsp;|&nbsp; p.kolev@medical.com
+            </p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.getElementById('login-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const errorEl = document.getElementById('login-error');
+        const btn = document.getElementById('login-btn');
+
+        errorEl.classList.add('d-none');
+        btn.textContent = 'Влизане...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: email, password: password})
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                localStorage.setItem('jwt_token', data.token);
+                localStorage.setItem('user_role', data.role);
+                localStorage.setItem('user_email', data.username);
+
+                if (data.role === 'ADMIN') {
+                    window.location.href = '/admin/dashboard';
+                } else if (data.role === 'DOCTOR') {
+                    window.location.href = '/doctor/dashboard';
+                } else if (data.role === 'PATIENT') {
+                    window.location.href = '/patient/dashboard';
+                }
+            } else {
+                errorEl.textContent = data['съобщение'] || data.message || 'Грешен имейл или парола.';
+                errorEl.classList.remove('d-none');
+            }
+        } catch (err) {
+            errorEl.textContent = 'Грешка при свързване с сървъра.';
+            errorEl.classList.remove('d-none');
+        } finally {
+            btn.textContent = 'Вход';
+            btn.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>

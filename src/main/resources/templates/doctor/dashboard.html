@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лекар — Медицинска система</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar navbar-dark mb-3">
+    <div class="container-fluid">
+        <span class="navbar-brand fw-bold">Медицинска система</span>
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-white small" id="doctor-name-nav"></span>
+            <button class="btn btn-outline-light btn-sm" onclick="logout()">Изход</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid px-4">
+    <div id="main-error" class="alert alert-danger d-none mb-3"></div>
+
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#my-exams-tab" type="button">
+                Моите прегледи
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#patients-tab" type="button">
+                Пациенти
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sick-tab" type="button">
+                Болнични листове
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#password-tab" type="button">
+                Смяна на парола
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#stats-tab" type="button">
+                Статистики
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+
+        <!-- Моите прегледи -->
+        <div class="tab-pane fade show active" id="my-exams-tab">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Моите прегледи</h5>
+                <button class="btn btn-primary btn-sm" onclick="openNewExamModal()">+ Нов преглед</button>
+            </div>
+            <div id="exams-error" class="alert alert-danger d-none mb-2"></div>
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Дата</th>
+                                <th>Пациент</th>
+                                <th>Диагноза</th>
+                                <th>Лечение</th>
+                                <th>Цена</th>
+                                <th>Плащане</th>
+                                <th>Действия</th>
+                            </tr>
+                            </thead>
+                            <tbody id="exams-tbody">
+                            <tr><td colspan="8" class="text-center text-muted py-3">Зареждане...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Пациенти -->
+        <div class="tab-pane fade" id="patients-tab">
+            <h5 class="mb-3">Моите пациенти</h5>
+            <div id="patients-error" class="alert alert-danger d-none mb-2"></div>
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Пациент</th>
+                                <th>ЕГН</th>
+                                <th>Осигурен</th>
+                                <th>Действия</th>
+                            </tr>
+                            </thead>
+                            <tbody id="patients-tbody">
+                            <tr><td colspan="5" class="text-center text-muted py-3">Зареждане...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Болнични листове -->
+        <div class="tab-pane fade" id="sick-tab">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Болнични листове</h5>
+                <button class="btn btn-primary btn-sm" onclick="openNewSickLeaveModal()">+ Нов болничен лист</button>
+            </div>
+            <div id="sick-error" class="alert alert-danger d-none mb-2"></div>
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Начална дата</th>
+                                <th>Брой дни</th>
+                                <th>Лекар</th>
+                                <th>Пациент</th>
+                                <th>Преглед</th>
+                            </tr>
+                            </thead>
+                            <tbody id="sick-tbody">
+                            <tr><td colspan="6" class="text-center text-muted py-3">Зареждане...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Смяна на парола -->
+        <div class="tab-pane fade" id="password-tab">
+            <div class="row justify-content-center">
+                <div class="col-md-5">
+                    <div class="card">
+                        <div class="card-header">Смяна на парола</div>
+                        <div class="card-body">
+                            <div id="password-error" class="alert alert-danger d-none"></div>
+                            <div id="password-success" class="alert alert-success d-none">
+                                Паролата е сменена успешно.
+                            </div>
+                            <form id="password-form">
+                                <div class="mb-3">
+                                    <label class="form-label">Текуща парола</label>
+                                    <input type="password" class="form-control" id="current-pass" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Нова парола</label>
+                                    <input type="password" class="form-control" id="new-pass" required minlength="7">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label">Потвърди нова парола</label>
+                                    <input type="password" class="form-control" id="confirm-pass" required minlength="7">
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Смяна на парола</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Статистики -->
+        <div class="tab-pane fade" id="stats-tab">
+            <div id="stats-error" class="alert alert-danger d-none mb-3"></div>
+            <div class="row" id="stats-container">
+                <!-- Попълва се динамично при зареждане на таба -->
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ===== Модал: Нов / Редактиране на преглед ===== -->
+<div class="modal fade" id="examModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exam-modal-title">Нов преглед</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="exam-modal-error" class="alert alert-danger d-none"></div>
+                <form id="exam-form">
+                    <input type="hidden" id="exam-id">
+                    <div class="mb-3">
+                        <label class="form-label">Дата на прегледа <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="exam-date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Пациент <span class="text-danger">*</span></label>
+                        <select class="form-select" id="exam-patient" required>
+                            <option value="">— изберете пациент —</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Диагноза <span class="text-danger">*</span></label>
+                        <select class="form-select" id="exam-diagnosis" required>
+                            <option value="">— изберете диагноза —</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Лечение <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="exam-treatment" rows="2" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Цена (лв.) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="exam-price" step="0.01" min="0.01" required readonly>
+                        <div class="form-text" id="exam-price-hint">(автоматично от специалността)</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отказ</button>
+                <button type="button" class="btn btn-primary" onclick="submitExam()">Запази</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Модал: Нов болничен лист ===== -->
+<div class="modal fade" id="sickLeaveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Нов болничен лист</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="sl-modal-error" class="alert alert-danger d-none"></div>
+                <form id="sl-form">
+                    <div class="mb-3">
+                        <label class="form-label">Преглед <span class="text-danger">*</span></label>
+                        <select class="form-select" id="sl-exam" required>
+                            <option value="">— изберете преглед —</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Начална дата <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="sl-start-date" required>
+                        <div class="form-text">Максимум 2 дни в миналото</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Брой дни <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="sl-days" min="1" max="30" required>
+                        <div class="form-text">Максимум 30 дни</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отказ</button>
+                <button type="button" class="btn btn-primary" onclick="submitSickLeave()">Запази</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Модал: Медицинско досие на пациент ===== -->
+<div class="modal fade" id="medicalRecordModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Медицинско досие: <span id="med-record-name"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6 class="mb-2">Прегледи</h6>
+                <div class="table-responsive mb-4">
+                    <table class="table table-sm table-bordered mb-0">
+                        <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Дата</th>
+                            <th>Диагноза</th>
+                            <th>Лечение</th>
+                            <th>Цена</th>
+                        </tr>
+                        </thead>
+                        <tbody id="med-record-exams">
+                        <tr><td colspan="5" class="text-center text-muted py-2">Зареждане...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h6 class="mb-2">Болнични листове</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered mb-0">
+                        <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Начална дата</th>
+                            <th>Брой дни</th>
+                            <th>Лекар</th>
+                        </tr>
+                        </thead>
+                        <tbody id="med-record-sick">
+                        <tr><td colspan="4" class="text-center text-muted py-2">Зареждане...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Затвори</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+    checkAuth('DOCTOR');
+
+    // Глобално състояние
+    let myDoctorId = null;
+    let mySpecialty = null;
+    let allExams = [];
+    let diagnosesData = [];
+    let myPatients = [];
+    let allPatients = [];
+    let editingExamId = null;
+    let statsBuilt = false;
+    let specialtyLabels = {};
+    let feesCache = {};
+
+    const monthNames = ['Януари','Февруари','Март','Април','Май','Юни',
+        'Юли','Август','Септември','Октомври','Ноември','Декември'];
+
+    // Изчисляване на днешната дата като стринг (YYYY-MM-DD)
+    function todayStr() {
+        return new Date().toISOString().slice(0, 10);
+    }
+
+    function daysAgoStr(days) {
+        const d = new Date();
+        d.setDate(d.getDate() - days);
+        return d.toISOString().slice(0, 10);
+    }
+
+    // Зарежда специалностите и ги кешира за показване
+    async function loadSpecialties() {
+        const r = await fetch('/api/doctors/specialties', {headers: authHeaders()});
+        if (!r.ok) return;
+        const specs = await r.json();
+        specs.forEach(s => { specialtyLabels[s.value] = s.label; });
+    }
+
+    // Зарежда таксите и ги кешира по специалност
+    async function loadFees() {
+        const r = await fetch('/api/examination-fees', {headers: authHeaders()});
+        if (!r.ok) return;
+        const fees = await r.json();
+        fees.forEach(f => { feesCache[f.specialty] = f.baseFee; });
+    }
+
+    // Зарежда профила на текущия лекар
+    async function loadMyProfile() {
+        const r = await fetch('/api/doctors/me', {headers: authHeaders()});
+        if (!r.ok) { if (r.status === 401) { logout(); } return; }
+        const doc = await r.json();
+        myDoctorId = doc.id;
+        mySpecialty = doc.specialty;
+        document.getElementById('doctor-name-nav').textContent =
+            `Д-р ${doc.firstName} ${doc.lastName} (${specialtyLabels[doc.specialty] || doc.specialty})`;
+    }
+
+    // Зарежда диагнозите за специалността на текущия лекар
+    async function loadDiagnoses() {
+        const r = await fetch('/api/diagnoses/my-specialty', {headers: authHeaders()});
+        if (!r.ok) return;
+        diagnosesData = await r.json();
+    }
+
+    // Зарежда и показва всички прегледи
+    async function loadExaminations() {
+        const r = await fetch('/api/examinations', {headers: authHeaders()});
+        if (!r.ok) {
+            if (r.status === 401) { logout(); return; }
+            showError('exams-error', await getErrorMessage(r));
+            return;
+        }
+        allExams = await r.json();
+        renderExams();
+        refreshPatientDropdown();
+    }
+
+    function renderExams() {
+        const tbody = document.getElementById('exams-tbody');
+        const myExams = allExams.filter(e => e.doctorId === myDoctorId);
+        if (!myExams.length) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Няма прегледи</td></tr>';
+            return;
+        }
+        tbody.innerHTML = myExams.map((e, i) => `
+            <tr>
+                <td>${i + 1}</td>
+                <td>${e.examinationDate}</td>
+                <td>${e.patientName}</td>
+                <td><strong>${e.diagnosisCode}</strong> ${e.diagnosisName}</td>
+                <td>${e.treatment}</td>
+                <td>${e.price} лв.</td>
+                <td>${e.paidByPatient
+                    ? '<span class="badge bg-warning text-dark">Пациент</span>'
+                    : '<span class="badge bg-success">НЗОК</span>'}</td>
+                <td class="table-actions">
+                    <button class="btn btn-outline-primary btn-xs me-1"
+                            onclick="openEditExamModal(${e.id})">Редактиране</button>
+                    <button class="btn btn-outline-danger btn-xs"
+                            onclick="deleteExamination(${e.id})">Изтриване</button>
+                </td>
+            </tr>`
+        ).join('');
+    }
+
+    // Зарежда и показва болничните листове
+    async function loadSickLeaves() {
+        const r = await fetch('/api/sick-leaves', {headers: authHeaders()});
+        if (!r.ok) {
+            if (r.status === 401) { logout(); return; }
+            showError('sick-error', await getErrorMessage(r));
+            return;
+        }
+        const leaves = await r.json();
+        const tbody = document.getElementById('sick-tbody');
+        if (!leaves.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Няма болнични листове</td></tr>';
+            return;
+        }
+        tbody.innerHTML = leaves.map((l, i) => `
+            <tr>
+                <td>${i + 1}</td>
+                <td>${l.startDate}</td>
+                <td>${l.numberOfDays} дни</td>
+                <td>${l.doctorName}</td>
+                <td>${l.patientName}</td>
+                <td>Преглед #${l.examinationId}</td>
+            </tr>
+        `).join('');
+    }
+
+    // Зарежда всички пациенти от системата
+    async function loadAllPatients() {
+        const r = await fetch('/api/patients/all', {headers: authHeaders()});
+        if (!r.ok) return;
+        allPatients = await r.json();
+    }
+
+    // Попълва dropdown с всички пациенти от системата
+    function refreshPatientDropdown() {
+        const patients = allPatients
+            .map(p => ({id: p.id, name: `${p.firstName} ${p.lastName} (${p.egn})`}))
+            .sort((a, b) => a.name.localeCompare(b.name, 'bg'));
+
+        const sel = document.getElementById('exam-patient');
+        const currentVal = sel.value;
+        sel.innerHTML = '<option value="">— изберете пациент —</option>' +
+            patients.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        if (currentVal) sel.value = currentVal;
+    }
+
+    // Попълва dropdown с диагнози
+    function refreshDiagnosisDropdown() {
+        const sel = document.getElementById('exam-diagnosis');
+        const currentVal = sel.value;
+        sel.innerHTML = '<option value="">— изберете диагноза —</option>' +
+            diagnosesData.map(d => `<option value="${d.id}">${d.code} — ${d.name}</option>`).join('');
+        if (currentVal) sel.value = currentVal;
+    }
+
+    // Отваря модал за нов преглед
+    function openNewExamModal() {
+        editingExamId = null;
+        document.getElementById('exam-modal-title').textContent = 'Нов преглед';
+        document.getElementById('exam-id').value = '';
+        document.getElementById('exam-date').value = todayStr();
+        document.getElementById('exam-date').max = todayStr();
+        document.getElementById('exam-patient').value = '';
+        document.getElementById('exam-diagnosis').value = '';
+        document.getElementById('exam-treatment').value = '';
+        // Цената се задава автоматично от сървъра — показваме я само информативно
+        document.getElementById('exam-price').value = (mySpecialty && feesCache[mySpecialty]) ? feesCache[mySpecialty] : '';
+        const hintEl = document.getElementById('exam-price-hint');
+        if (mySpecialty && feesCache[mySpecialty]) {
+            hintEl.textContent = `(автоматично от специалността: ${feesCache[mySpecialty]} лв.)`;
+        } else {
+            hintEl.textContent = '(автоматично от специалността)';
+        }
+        hideError('exam-modal-error');
+        refreshPatientDropdown();
+        refreshDiagnosisDropdown();
+        new bootstrap.Modal(document.getElementById('examModal')).show();
+    }
+
+    // Отваря модал за редактиране на преглед
+    function openEditExamModal(id) {
+        const exam = allExams.find(e => e.id === id);
+        if (!exam) return;
+        editingExamId = id;
+        document.getElementById('exam-modal-title').textContent = 'Редактиране на преглед';
+        document.getElementById('exam-id').value = id;
+        document.getElementById('exam-date').value = exam.examinationDate;
+        document.getElementById('exam-date').max = todayStr();
+        refreshPatientDropdown();
+        refreshDiagnosisDropdown();
+        document.getElementById('exam-patient').value = exam.patientId;
+        document.getElementById('exam-diagnosis').value = exam.diagnosisId;
+        document.getElementById('exam-treatment').value = exam.treatment;
+        document.getElementById('exam-price').value = exam.price;
+        document.getElementById('exam-price-hint').textContent = '(автоматично от специалността)';
+        hideError('exam-modal-error');
+        new bootstrap.Modal(document.getElementById('examModal')).show();
+    }
+
+    // Изпраща формата за преглед (нов или редактиране)
+    async function submitExam() {
+        hideError('exam-modal-error');
+        const body = {
+            examinationDate: document.getElementById('exam-date').value,
+            patientId: parseInt(document.getElementById('exam-patient').value),
+            diagnosisId: parseInt(document.getElementById('exam-diagnosis').value),
+            treatment: document.getElementById('exam-treatment').value.trim(),
+            price: parseFloat(document.getElementById('exam-price').value)
+        };
+
+        if (!body.examinationDate || !body.patientId || !body.diagnosisId || !body.treatment || !body.price) {
+            showError('exam-modal-error', 'Всички полета са задължителни.');
+            return;
+        }
+
+        const url = editingExamId ? `/api/examinations/${editingExamId}` : '/api/examinations';
+        const method = editingExamId ? 'PUT' : 'POST';
+
+        const r = await fetch(url, {method, headers: authHeaders(), body: JSON.stringify(body)});
+        if (!r.ok) {
+            if (r.status === 401) { logout(); return; }
+            showError('exam-modal-error', await getErrorMessage(r));
+            return;
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('examModal')).hide();
+        hideError('exams-error');
+        loadExaminations();
+    }
+
+    // Изтрива преглед
+    async function deleteExamination(id) {
+        if (!confirm('Сигурни ли сте, че искате да изтриете този преглед?')) return;
+        const r = await fetch(`/api/examinations/${id}`, {method: 'DELETE', headers: authHeaders()});
+        if (!r.ok) {
+            if (r.status === 401) { logout(); return; }
+            showError('exams-error', await getErrorMessage(r));
+            return;
+        }
+        hideError('exams-error');
+        loadExaminations();
+    }
+
+    // Отваря модал за нов болничен лист
+    function openNewSickLeaveModal() {
+        // Попълва dropdown само с прегледите на текущия лекар
+        const myExams = allExams.filter(e => e.doctorId === myDoctorId);
+        const sel = document.getElementById('sl-exam');
+        sel.innerHTML = '<option value="">— изберете преглед —</option>' +
+            myExams.map(e =>
+                `<option value="${e.id}">${e.examinationDate} | ${e.patientName} | ${e.diagnosisCode}</option>`
+            ).join('');
+
+        document.getElementById('sl-start-date').value = todayStr();
+        document.getElementById('sl-start-date').max = todayStr();
+        document.getElementById('sl-start-date').min = daysAgoStr(2);
+        document.getElementById('sl-days').value = '';
+        hideError('sl-modal-error');
+        new bootstrap.Modal(document.getElementById('sickLeaveModal')).show();
+    }
+
+    // Изпраща формата за болничен лист
+    async function submitSickLeave() {
+        hideError('sl-modal-error');
+        const examinationId = parseInt(document.getElementById('sl-exam').value);
+        const startDate = document.getElementById('sl-start-date').value;
+        const numberOfDays = parseInt(document.getElementById('sl-days').value);
+
+        if (!examinationId || !startDate || !numberOfDays) {
+            showError('sl-modal-error', 'Всички полета са задължителни.');
+            return;
+        }
+
+        const r = await fetch('/api/sick-leaves', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({examinationId, startDate, numberOfDays})
+        });
+
+        if (!r.ok) {
+            if (r.status === 401) { logout(); return; }
+            showError('sl-modal-error', await getErrorMessage(r));
+            return;
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('sickLeaveModal')).hide();
+        hideError('sick-error');
+        loadSickLeaves();
+    }
+
+    // Смяна на парола
+    document.getElementById('password-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const currentPassword = document.getElementById('current-pass').value;
+        const newPassword = document.getElementById('new-pass').value;
+        const confirmPass = document.getElementById('confirm-pass').value;
+
+        hideError('password-error');
+        document.getElementById('password-success').classList.add('d-none');
+
+        if (newPassword !== confirmPass) {
+            showError('password-error', 'Новата парола и потвърждението не съвпадат.');
+            return;
+        }
+
+        const r = await fetch('/api/doctors/change-password', {
+            method: 'PUT',
+            headers: authHeaders(),
+            body: JSON.stringify({currentPassword, newPassword})
+        });
+
+        if (!r.ok) {
+            if (r.status === 401) { logout(); return; }
+            showError('password-error', await getErrorMessage(r));
+            return;
+        }
+
+        document.getElementById('password-success').classList.remove('d-none');
+        document.getElementById('password-form').reset();
+    });
+
+    // ===== СТАТИСТИКИ (само моите данни) =====
+
+    function buildStatsUI() {
+        if (statsBuilt) return;
+        statsBuilt = true;
+        document.getElementById('stats-container').innerHTML = `
+            <div class="col-md-6">
+                <div class="card stat-card">
+                    <div class="card-header">1. Общ брой мои прегледи</div>
+                    <div class="card-body">
+                        <div id="my-stat1-result">Зареждане...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card stat-card">
+                    <div class="card-header">2. Брой уникални пациенти</div>
+                    <div class="card-body">
+                        <div id="my-stat2-result">Зареждане...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card stat-card">
+                    <div class="card-header">3. Общ приход</div>
+                    <div class="card-body">
+                        <div id="my-stat3-result">Зареждане...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card stat-card">
+                    <div class="card-header">4. Платено от неосигурени пациенти</div>
+                    <div class="card-body">
+                        <div id="my-stat4-result">Зареждане...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card stat-card">
+                    <div class="card-header">5. Най-честа диагноза</div>
+                    <div class="card-body">
+                        <div id="my-stat5-result">Зареждане...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card stat-card">
+                    <div class="card-header">6. Брой издадени болнични листове</div>
+                    <div class="card-body">
+                        <div id="my-stat6-result">Зареждане...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card stat-card">
+                    <div class="card-header">7. Мои прегледи в период</div>
+                    <div class="card-body">
+                        <div class="row g-1 mb-2">
+                            <div class="col"><input type="date" class="form-control form-control-sm" id="my-stat7-from"></div>
+                            <div class="col"><input type="date" class="form-control form-control-sm" id="my-stat7-to"></div>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="loadMyStat7()">Зареди</button>
+                        <div id="my-stat7-result" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card stat-card">
+                    <div class="card-header">8. Мои пациенти с диагноза</div>
+                    <div class="card-body">
+                        <select class="form-select form-select-sm mb-2" id="my-stat8-diag">
+                            <option value="">— изберете диагноза —</option>
+                        </select>
+                        <button class="btn btn-sm btn-primary" onclick="loadMyStat8()">Зареди</button>
+                        <div id="my-stat8-result" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Попълва диагнози в карта 8
+        const diagSel = document.getElementById('my-stat8-diag');
+        diagnosesData.forEach(d => {
+            diagSel.innerHTML += `<option value="${d.id}">${d.code} — ${d.name}</option>`;
+        });
+
+        // Автоматично зарежда карти 1–6
+        loadMyStat1();
+        loadMyStat2();
+        loadMyStat3();
+        loadMyStat4();
+        loadMyStat5();
+        loadMyStat6();
+    }
+
+    async function loadMyStat1() {
+        const r = await fetch('/api/statistics/my/visits-count', {headers: authHeaders()});
+        document.getElementById('my-stat1-result').innerHTML = r.ok
+            ? `<span class="fs-5 fw-bold">${(await r.json()).count}</span>`
+            : '<span class="text-danger">Грешка</span>';
+    }
+
+    async function loadMyStat2() {
+        const r = await fetch('/api/statistics/my/patients-count', {headers: authHeaders()});
+        document.getElementById('my-stat2-result').innerHTML = r.ok
+            ? `<span class="fs-5 fw-bold">${(await r.json()).count}</span>`
+            : '<span class="text-danger">Грешка</span>';
+    }
+
+    async function loadMyStat3() {
+        const r = await fetch('/api/statistics/my/total-revenue', {headers: authHeaders()});
+        document.getElementById('my-stat3-result').innerHTML = r.ok
+            ? `<span class="fs-5 fw-bold">${(await r.json()).totalAmount} лв.</span>`
+            : '<span class="text-danger">Грешка</span>';
+    }
+
+    async function loadMyStat4() {
+        const r = await fetch('/api/statistics/my/patient-payments', {headers: authHeaders()});
+        document.getElementById('my-stat4-result').innerHTML = r.ok
+            ? `<span class="fs-5 fw-bold">${(await r.json()).totalAmount} лв.</span>`
+            : '<span class="text-danger">Грешка</span>';
+    }
+
+    async function loadMyStat5() {
+        const r = await fetch('/api/statistics/my/most-common-diagnosis', {headers: authHeaders()});
+        if (!r.ok) {
+            document.getElementById('my-stat5-result').innerHTML = r.status === 404
+                ? '<span class="text-muted">Няма прегледи</span>'
+                : '<span class="text-danger">Грешка</span>';
+            return;
+        }
+        const d = await r.json();
+        document.getElementById('my-stat5-result').innerHTML = `<strong>${d.code}</strong> — ${d.name}`;
+    }
+
+    async function loadMyStat6() {
+        const r = await fetch('/api/statistics/my/sick-leaves-count', {headers: authHeaders()});
+        document.getElementById('my-stat6-result').innerHTML = r.ok
+            ? `<span class="fs-5 fw-bold">${(await r.json()).count}</span>`
+            : '<span class="text-danger">Грешка</span>';
+    }
+
+    async function loadMyStat7() {
+        const from = document.getElementById('my-stat7-from').value;
+        const to = document.getElementById('my-stat7-to').value;
+        if (!from || !to) { alert('Въведете начална и крайна дата.'); return; }
+        const r = await fetch(`/api/statistics/my/examinations-by-period?from=${from}&to=${to}`, {headers: authHeaders()});
+        if (!r.ok) { document.getElementById('my-stat7-result').innerHTML = '<span class="text-danger">Грешка</span>'; return; }
+        const exams = await r.json();
+        document.getElementById('my-stat7-result').innerHTML = exams.length
+            ? `<table class="table table-sm"><thead><tr><th>Дата</th><th>Пациент</th><th>Диагноза</th><th>Цена</th></tr></thead><tbody>
+               ${exams.map(e => `<tr><td>${e.examinationDate}</td><td>${e.patientName}</td><td>${e.diagnosisCode}</td><td>${e.price} лв.</td></tr>`).join('')}
+               </tbody></table>`
+            : '<span class="text-muted">Няма прегледи в избрания период</span>';
+    }
+
+    async function loadMyStat8() {
+        const id = document.getElementById('my-stat8-diag').value;
+        if (!id) return;
+        const r = await fetch(`/api/statistics/my/my-patients-by-diagnosis?diagnosisId=${id}`, {headers: authHeaders()});
+        if (!r.ok) { document.getElementById('my-stat8-result').innerHTML = '<span class="text-danger">Грешка</span>'; return; }
+        const patients = await r.json();
+        document.getElementById('my-stat8-result').innerHTML = patients.length
+            ? `<ul class="list-group list-group-flush">${patients.map(p =>
+                `<li class="list-group-item py-1">${p.firstName} ${p.lastName} (ЕГН: ${p.egn})</li>`).join('')}</ul>`
+            : '<span class="text-muted">Няма пациенти</span>';
+    }
+
+    // Зарежда пациентите на текущия лекар
+    async function loadMyPatients() {
+        const r = await fetch('/api/doctors/my-patients', {headers: authHeaders()});
+        if (!r.ok) {
+            if (r.status === 401) { logout(); return; }
+            showError('patients-error', await getErrorMessage(r));
+            return;
+        }
+        myPatients = await r.json();
+        const tbody = document.getElementById('patients-tbody');
+        if (!myPatients.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Няма пациенти</td></tr>';
+            return;
+        }
+        tbody.innerHTML = myPatients.map((p, i) => `
+            <tr>
+                <td>${i + 1}</td>
+                <td>${p.firstName} ${p.lastName}</td>
+                <td>${p.egn}</td>
+                <td>${p.healthInsured
+                    ? '<span class="badge bg-success">Осигурен</span>'
+                    : '<span class="badge bg-danger">Неосигурен</span>'}</td>
+                <td>
+                    <button class="btn btn-outline-primary btn-xs"
+                            onclick="openMedicalRecordModal(${p.id}, '${p.firstName} ${p.lastName}')">
+                        Медицинско досие
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Отваря модал с медицинско досие на пациент
+    async function openMedicalRecordModal(patientId, patientName) {
+        document.getElementById('med-record-name').textContent = patientName;
+        document.getElementById('med-record-exams').innerHTML = '<tr><td colspan="5" class="text-center text-muted py-2">Зареждане...</td></tr>';
+        document.getElementById('med-record-sick').innerHTML = '<tr><td colspan="4" class="text-center text-muted py-2">Зареждане...</td></tr>';
+        new bootstrap.Modal(document.getElementById('medicalRecordModal')).show();
+
+        try {
+            const [examsRes, sickRes] = await Promise.all([
+                fetch(`/api/patients/${patientId}/examinations`, {headers: authHeaders()}),
+                fetch(`/api/patients/${patientId}/sick-leaves`, {headers: authHeaders()})
+            ]);
+
+            if (examsRes.ok) {
+                const exams = await examsRes.json();
+                document.getElementById('med-record-exams').innerHTML = exams.length
+                    ? exams.map((e, i) => `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td>${e.examinationDate}</td>
+                            <td><strong>${e.diagnosisCode}</strong> ${e.diagnosisName}</td>
+                            <td>${e.treatment}</td>
+                            <td>${e.price} лв.</td>
+                        </tr>`).join('')
+                    : '<tr><td colspan="5" class="text-center text-muted py-2">Няма прегледи</td></tr>';
+            } else {
+                document.getElementById('med-record-exams').innerHTML =
+                    '<tr><td colspan="5" class="text-center text-danger py-2">Грешка при зареждане на прегледите</td></tr>';
+            }
+
+            if (sickRes.ok) {
+                const leaves = await sickRes.json();
+                document.getElementById('med-record-sick').innerHTML = leaves.length
+                    ? leaves.map((l, i) => `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td>${l.startDate}</td>
+                            <td>${l.numberOfDays} дни</td>
+                            <td>${l.doctorName}</td>
+                        </tr>`).join('')
+                    : '<tr><td colspan="4" class="text-center text-muted py-2">Няма болнични листове</td></tr>';
+            } else {
+                document.getElementById('med-record-sick').innerHTML =
+                    '<tr><td colspan="4" class="text-center text-danger py-2">Грешка при зареждане на болничните листове</td></tr>';
+            }
+        } catch (err) {
+            document.getElementById('med-record-exams').innerHTML =
+                '<tr><td colspan="5" class="text-center text-danger py-2">Грешка при свързване с сървъра</td></tr>';
+            document.getElementById('med-record-sick').innerHTML =
+                '<tr><td colspan="4" class="text-center text-danger py-2">Грешка при свързване с сървъра</td></tr>';
+        }
+    }
+
+    // Зареждане при отваряне на таб
+    document.addEventListener('shown.bs.tab', function (e) {
+        if (e.target.dataset.bsTarget === '#patients-tab') loadMyPatients();
+        if (e.target.dataset.bsTarget === '#sick-tab')     loadSickLeaves();
+        if (e.target.dataset.bsTarget === '#stats-tab')    buildStatsUI();
+    });
+
+    // Инициализация при зареждане на страницата
+    async function init() {
+        await loadSpecialties();
+        await loadFees();
+        await loadMyProfile();
+        await loadDiagnoses();
+        await loadAllPatients();
+        await loadExaminations();
+    }
+
+    init();
+</script>
+</body>
+</html>
