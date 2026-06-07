@@ -43,7 +43,8 @@ class SickLeaveServiceTest {
         Doctor doctor = Doctor.builder().id(1L).build();
         Patient patient = Patient.builder().id(1L).build();
         Examination examination = Examination.builder()
-                .id(1L).doctor(doctor).patient(patient).build();
+                .id(1L).doctor(doctor).patient(patient)
+                .examinationDate(LocalDate.now()).build();
 
         SickLeaveRequest request = new SickLeaveRequest();
         request.setExaminationId(1L);
@@ -79,7 +80,8 @@ class SickLeaveServiceTest {
         Doctor doctor = Doctor.builder().id(5L).firstName("Мария").lastName("Иванова").build();
         Patient patient = Patient.builder().id(7L).firstName("Елена").lastName("Тодорова").build();
         Examination examination = Examination.builder()
-                .id(1L).doctor(doctor).patient(patient).build();
+                .id(1L).doctor(doctor).patient(patient)
+                .examinationDate(LocalDate.now()).build();
 
         SickLeaveRequest request = new SickLeaveRequest();
         request.setExaminationId(1L);
@@ -116,7 +118,8 @@ class SickLeaveServiceTest {
         Doctor doctor = Doctor.builder().id(1L).build();
         Patient patient = Patient.builder().id(1L).build();
         Examination examination = Examination.builder()
-                .id(1L).doctor(doctor).patient(patient).build();
+                .id(1L).doctor(doctor).patient(patient)
+                .examinationDate(LocalDate.now()).build();
 
         SickLeaveRequest request = new SickLeaveRequest();
         request.setExaminationId(1L);

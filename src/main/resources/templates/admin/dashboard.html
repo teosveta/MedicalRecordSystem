@@ -401,13 +401,17 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Уникален идентификационен номер <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="doc-uin" required>
+                        <input type="text" class="form-control" id="doc-uin" required
+                               pattern="[0-9]{10}" maxlength="10" inputmode="numeric"
+                               title="УИН трябва да съдържа точно 10 цифри">
+                        <div class="form-text">Въведете точно 10 цифри</div>
                     </div>
                     <div class="mb-2">
-                        <label class="form-label">Специалност <span class="text-danger">*</span></label>
-                        <select class="form-select" id="doc-specialty" required>
-                            <option value="">— изберете —</option>
-                        </select>
+                        <label class="form-label">Специалности <span class="text-danger">*</span></label>
+                        <div id="doc-specialties-list" class="border rounded p-2" style="max-height:160px;overflow-y:auto">
+                            <span class="text-muted small">Зареждане...</span>
+                        </div>
+                        <div class="form-text">Изберете поне една специалност</div>
                     </div>
                     <div class="mb-2">
                         <div class="form-check">
@@ -606,13 +610,17 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Уникален идентификационен номер <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="edit-doc-uin" required>
+                        <input type="text" class="form-control" id="edit-doc-uin" required
+                               pattern="[0-9]{10}" maxlength="10" inputmode="numeric"
+                               title="УИН трябва да съдържа точно 10 цифри">
+                        <div class="form-text">Въведете точно 10 цифри</div>
                     </div>
                     <div class="mb-2">
-                        <label class="form-label">Специалност <span class="text-danger">*</span></label>
-                        <select class="form-select" id="edit-doc-specialty" required>
-                            <option value="">— изберете —</option>
-                        </select>
+                        <label class="form-label">Специалности <span class="text-danger">*</span></label>
+                        <div id="edit-doc-specialties-list" class="border rounded p-2" style="max-height:160px;overflow-y:auto">
+                            <span class="text-muted small">Зареждане...</span>
+                        </div>
+                        <div class="form-text">Изберете поне една специалност</div>
                     </div>
                     <div class="mb-2">
                         <div class="form-check">
@@ -718,7 +726,7 @@
                 <td>${i + 1}</td>
                 <td><code>${d.uniqueIdentificationNumber}</code></td>
                 <td>${d.firstName} ${d.lastName}</td>
-                <td>${specialtyLabels[d.specialty] || d.specialty}</td>
+                <td>${(d.specialties || []).map(s => specialtyLabels[s] || s).join(', ')}</td>
                 <td>${d.canBeGP ? '<span class="badge bg-primary">Да</span>' : '<span class="badge bg-secondary">Не</span>'}</td>
                 <td>${d.email}</td>
                 <td class="table-actions">
@@ -740,45 +748,60 @@
         const r = await fetch('/api/admin/doctors/specialties', {headers: authHeaders()});
         if (!r.ok) return;
         specialtiesData = await r.json();
-        specialtiesData.forEach(s => {
-            specialtyLabels[s.value] = s.label;
-            document.getElementById('doc-specialty').innerHTML += `<option value="${s.value}">${s.label}</option>`;
-        });
+        specialtiesData.forEach(s => { specialtyLabels[s.value] = s.label; });
         specialtiesLoaded = true;
     }
 
-    // Изгражда dropdown за специалности наново (без дублирания)
-    function populateSpecialtyDropdown(selectId, selectedValue) {
-        const sel = document.getElementById(selectId);
-        sel.innerHTML = '<option value="">— изберете специалност —</option>' +
-            specialtiesData.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
-        if (selectedValue) sel.value = selectedValue;
+    // Рендира checkboxes за специалности в даден контейнер
+    function renderSpecialtyCheckboxes(containerId, selectedValues) {
+        const selected = new Set(selectedValues || []);
+        document.getElementById(containerId).innerHTML = specialtiesData.map((s, i) =>
+            `<div class="form-check">
+                <input class="form-check-input spec-cb" type="checkbox"
+                    id="${containerId}-${i}" value="${s.value}"
+                    ${selected.has(s.value) ? 'checked' : ''}>
+                <label class="form-check-label" for="${containerId}-${i}">${s.label}</label>
+            </div>`
+        ).join('');
+    }
+
+    function getCheckedSpecialties(containerId) {
+        return Array.from(document.querySelectorAll(`#${containerId} .spec-cb:checked`)).map(cb => cb.value);
     }
 
     function openAddDoctorModal() {
         document.getElementById('add-doctor-form').reset();
         hideError('add-doctor-error');
         loadSpecialties().then(() => {
-            populateSpecialtyDropdown('doc-specialty', '');
+            renderSpecialtyCheckboxes('doc-specialties-list', []);
             new bootstrap.Modal(document.getElementById('addDoctorModal')).show();
         });
     }
 
     async function submitAddDoctor() {
         hideError('add-doctor-error');
+        const specialties = getCheckedSpecialties('doc-specialties-list');
         const body = {
             firstName: document.getElementById('doc-first-name').value.trim(),
             lastName: document.getElementById('doc-last-name').value.trim(),
             uniqueIdentificationNumber: document.getElementById('doc-uin').value.trim(),
-            specialty: document.getElementById('doc-specialty').value,
+            specialties,
             canBeGP: document.getElementById('doc-can-be-gp').checked,
             email: document.getElementById('doc-email').value.trim(),
             password: document.getElementById('doc-password').value
         };
 
         if (!body.firstName || !body.lastName || !body.uniqueIdentificationNumber
-                || !body.specialty || !body.email || !body.password) {
+                || !body.email || !body.password) {
             showError('add-doctor-error', 'Моля, попълнете всички задължителни полета.');
+            return;
+        }
+        if (!/^\d{10}$/.test(body.uniqueIdentificationNumber)) {
+            showError('add-doctor-error', 'УИН трябва да съдържа точно 10 цифри.');
+            return;
+        }
+        if (!specialties.length) {
+            showError('add-doctor-error', 'Изберете поне една специалност.');
             return;
         }
 
@@ -821,7 +844,7 @@
         document.getElementById('edit-doc-can-be-gp').checked = d.canBeGP;
         hideError('edit-doctor-error');
         loadSpecialties().then(() => {
-            populateSpecialtyDropdown('edit-doc-specialty', d.specialty);
+            renderSpecialtyCheckboxes('edit-doc-specialties-list', d.specialties);
             new bootstrap.Modal(document.getElementById('editDoctorModal')).show();
         });
     }
@@ -829,16 +852,25 @@
     async function submitEditDoctor() {
         hideError('edit-doctor-error');
         const id = document.getElementById('edit-doc-id').value;
+        const specialties = getCheckedSpecialties('edit-doc-specialties-list');
         const body = {
             firstName: document.getElementById('edit-doc-first-name').value.trim(),
             lastName: document.getElementById('edit-doc-last-name').value.trim(),
             uniqueIdentificationNumber: document.getElementById('edit-doc-uin').value.trim(),
-            specialty: document.getElementById('edit-doc-specialty').value,
+            specialties,
             canBeGP: document.getElementById('edit-doc-can-be-gp').checked
         };
 
-        if (!body.firstName || !body.lastName || !body.uniqueIdentificationNumber || !body.specialty) {
+        if (!body.firstName || !body.lastName || !body.uniqueIdentificationNumber) {
             showError('edit-doctor-error', 'Моля, попълнете всички задължителни полета.');
+            return;
+        }
+        if (!/^\d{10}$/.test(body.uniqueIdentificationNumber)) {
+            showError('edit-doctor-error', 'УИН трябва да съдържа точно 10 цифри.');
+            return;
+        }
+        if (!specialties.length) {
+            showError('edit-doctor-error', 'Изберете поне една специалност.');
             return;
         }
 
@@ -1418,7 +1450,29 @@
         const r = await fetch('/api/statistics/patient-payments-by-doctor', {headers: authHeaders()});
         const el = document.getElementById('stat-pay-doc');
         if (!r.ok) { el.innerHTML = '<span class="text-danger">Няма данни</span>'; return; }
-        el.innerHTML = renderDocCountTable(await r.json(), 'totalAmount');
+        const data = await r.json();
+        if (!data.length) { el.innerHTML = '<span class="text-muted p-3 d-block">Няма данни</span>'; return; }
+        const fmt = v => parseFloat(v || 0).toFixed(2);
+        el.innerHTML = `<table class="table table-sm mb-0">
+            <thead><tr>
+                <th>Лекар</th>
+                <th class="text-end">Общо (лв.)</th>
+                <th class="text-end">НЗОК / по каса (лв.)</th>
+                <th class="text-end">От пациент (лв.)</th>
+            </tr></thead>
+            <tbody>${data.map(r => `<tr>
+                <td>${r.doctorName}</td>
+                <td class="text-end fw-bold">${fmt(r.totalAmount)}</td>
+                <td class="text-end text-success">${fmt(r.insuranceAmount)}</td>
+                <td class="text-end text-warning">${fmt(r.patientAmount)}</td>
+            </tr>`).join('')}
+            <tr class="table-light fw-bold">
+                <td>Общо</td>
+                <td class="text-end">${fmt(data.reduce((s,r)=>s+parseFloat(r.totalAmount||0),0))}</td>
+                <td class="text-end text-success">${fmt(data.reduce((s,r)=>s+parseFloat(r.insuranceAmount||0),0))}</td>
+                <td class="text-end text-warning">${fmt(data.reduce((s,r)=>s+parseFloat(r.patientAmount||0),0))}</td>
+            </tr>
+            </tbody></table>`;
     }
 
     async function loadStatMonthSick() {
@@ -1436,7 +1490,7 @@
         if (!r.ok) { el.innerHTML = '<span class="text-danger">Няма данни</span>'; return; }
         const d = await r.json();
         el.innerHTML = `<span class="fs-5 fw-bold">${d.firstName} ${d.lastName}</span>
-            <div class="text-muted small">${specialtyLabels[d.specialty] || d.specialty}</div>`;
+            <div class="text-muted small">${(d.specialties || []).map(s => specialtyLabels[s] || s).join(', ')}</div>`;
     }
 
     async function loadStatPatByDiag() {

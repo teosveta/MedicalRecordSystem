@@ -9,11 +9,11 @@ import lombok.Setter;
 public class PatientRequest {
 
     @NotBlank(message = "Името е задължително")
-    @Size(max = 100, message = "Името не може да надвишава 100 символа")
+    @Size(min = 2, max = 100, message = "Името трябва да е между 2 и 100 символа")
     private String firstName;
 
     @NotBlank(message = "Фамилията е задължителна")
-    @Size(max = 100, message = "Фамилията не може да надвишава 100 символа")
+    @Size(min = 2, max = 100, message = "Фамилията трябва да е между 2 и 100 символа")
     private String lastName;
 
     @NotBlank(message = "ЕГН-то е задължително")

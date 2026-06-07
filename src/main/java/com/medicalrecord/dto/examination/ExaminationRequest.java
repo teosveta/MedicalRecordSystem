@@ -4,6 +4,7 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -26,6 +27,7 @@ public class ExaminationRequest {
     private Long diagnosisId;
 
     @NotBlank(message = "Лечението е задължително")
+    @Size(max = 2000, message = "Описанието на лечението не може да надвишава 2000 символа")
     private String treatment;
 
     @NotNull(message = "Цената е задължителна")

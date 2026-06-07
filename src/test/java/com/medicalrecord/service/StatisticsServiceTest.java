@@ -1,6 +1,7 @@
 package com.medicalrecord.service;
 
 import com.medicalrecord.dto.diagnosis.DiagnosisResponse;
+import com.medicalrecord.dto.statistics.IdCountRow;
 import com.medicalrecord.entity.Diagnosis;
 import com.medicalrecord.exception.ResourceNotFoundException;
 import com.medicalrecord.mapper.DiagnosisMapper;
@@ -26,14 +27,14 @@ import static org.mockito.Mockito.*;
 class StatisticsServiceTest {
 
     @Mock private ExaminationRepository examinationRepository;
-    @Mock private DiagnosisRepository diagnosisRepository;
-    @Mock private DoctorRepository doctorRepository;
-    @Mock private PatientRepository patientRepository;
-    @Mock private SickLeaveRepository sickLeaveRepository;
-    @Mock private PatientMapper patientMapper;
-    @Mock private DiagnosisMapper diagnosisMapper;
-    @Mock private DoctorMapper doctorMapper;
-    @Mock private ExaminationMapper examinationMapper;
+    @Mock private DiagnosisRepository   diagnosisRepository;
+    @Mock private DoctorRepository      doctorRepository;
+    @Mock private PatientRepository     patientRepository;
+    @Mock private SickLeaveRepository   sickLeaveRepository;
+    @Mock private PatientMapper         patientMapper;
+    @Mock private DiagnosisMapper       diagnosisMapper;
+    @Mock private DoctorMapper          doctorMapper;
+    @Mock private ExaminationMapper     examinationMapper;
 
     @InjectMocks
     private StatisticsServiceImpl statisticsService;
@@ -45,9 +46,10 @@ class StatisticsServiceTest {
                 .id(1L).code("J06").name("Остра инфекция на горните дихателни пътища").build();
 
         // Диагноза J06 има 5 прегледа, I10 има 3 — J06 трябва да е „най-честа"
-        List<Object[]> countResults = List.of(
-                new Object[]{1L, 5L},
-                new Object[]{2L, 3L}
+        // Репозиторият вече връща List<IdCountRow>, не List<Object[]>
+        List<IdCountRow> countResults = List.of(
+                new IdCountRow(1L, 5L),
+                new IdCountRow(2L, 3L)
         );
 
         when(examinationRepository.countByDiagnosis()).thenReturn(countResults);
@@ -84,10 +86,10 @@ class StatisticsServiceTest {
         Diagnosis commonDiagnosis = Diagnosis.builder().id(1L).code("J06").name("Грип").build();
 
         // Резултатите са наредени по брой DESC — първият е с най-висок
-        List<Object[]> countResults = List.of(
-                new Object[]{1L, 10L}, // J06 — 10 прегледа
-                new Object[]{3L, 7L},  // I10 — 7 прегледа
-                new Object[]{2L, 2L}   // E11 — 2 прегледа
+        List<IdCountRow> countResults = List.of(
+                new IdCountRow(1L, 10L), // J06 — 10 прегледа
+                new IdCountRow(3L,  7L), // I10 — 7 прегледа
+                new IdCountRow(2L,  2L)  // E11 — 2 прегледа
         );
 
         when(examinationRepository.countByDiagnosis()).thenReturn(countResults);
@@ -102,6 +104,6 @@ class StatisticsServiceTest {
         // Проверяваме, че НЕ е върната диагноза с id=3 или id=2
         assertNotEquals(3L, result.getId(), "Не трябва да върне диагноза с id=3");
         assertNotEquals(2L, result.getId(), "Не трябва да върне диагноза с id=2");
-        assertEquals(1L, result.getId(), "Трябва да върне диагноза с id=1 (най-много прегледи)");
+        assertEquals(1L,  result.getId(), "Трябва да върне диагноза с id=1 (най-много прегледи)");
     }
 }

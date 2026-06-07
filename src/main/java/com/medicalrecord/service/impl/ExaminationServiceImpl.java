@@ -13,6 +13,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -80,14 +81,15 @@ public class ExaminationServiceImpl implements ExaminationService {
         Diagnosis diagnosis = diagnosisRepository.findById(request.getDiagnosisId())
                 .orElseThrow(() -> new ResourceNotFoundException("Диагноза", "id", request.getDiagnosisId()));
 
+        if (request.getExaminationDate().isBefore(LocalDate.now().minusDays(2))) {
+            throw new IllegalArgumentException("Датата на прегледа не може да бъде повече от 2 дни назад");
+        }
+
         // Проверяваме дали пациентът е здравноосигурен, за да определим кой плаща
         boolean paidByPatient = !patient.isHealthInsured();
 
-        // Цената се взима автоматично от таксата за специалността на лекаря
-        java.math.BigDecimal price = examinationFeeRepository
-                .findBySpecialty(doctor.getSpecialty())
-                .map(com.medicalrecord.entity.ExaminationFee::getBaseFee)
-                .orElse(request.getPrice());
+        // Лекарят избира цената от dropdown-а (специалност, ОПЛ или допълнителна услуга)
+        java.math.BigDecimal price = request.getPrice();
 
         Examination examination = Examination.builder()
                 .examinationDate(request.getExaminationDate())
@@ -125,11 +127,8 @@ public class ExaminationServiceImpl implements ExaminationService {
         Diagnosis diagnosis = diagnosisRepository.findById(request.getDiagnosisId())
                 .orElseThrow(() -> new ResourceNotFoundException("Диагноза", "id", request.getDiagnosisId()));
 
-        // Цената се взима автоматично от таксата за специалността на лекаря
-        java.math.BigDecimal price = examinationFeeRepository
-                .findBySpecialty(examination.getDoctor().getSpecialty())
-                .map(com.medicalrecord.entity.ExaminationFee::getBaseFee)
-                .orElse(request.getPrice());
+        // Лекарят може да промени цената от dropdown-а при редактиране
+        java.math.BigDecimal price = request.getPrice();
 
         examination.setExaminationDate(request.getExaminationDate());
         examination.setPatient(patient);
@@ -159,8 +158,18 @@ public class ExaminationServiceImpl implements ExaminationService {
             }
         }
 
-        // Изтриваме свързаните болнични листове преди прегледа
-        sickLeaveRepository.deleteAll(sickLeaveRepository.findAllByExamination(examination));
+        // Проверяваме дали има издаден болничен лист за прегледа (важи за всички роли)
+        if (sickLeaveRepository.existsByExamination(examination)) {
+            throw new IllegalArgumentException(
+                    "Не можете да изтриете преглед към който е издаден болничен лист. " +
+                    "Първо изтрийте болничния лист.");
+        }
+
+        // Лекарят може да изтрива само прегледи въведени днес
+        if (user.getRole() == Role.DOCTOR && !examination.getExaminationDate().isEqual(LocalDate.now())) {
+            throw new IllegalArgumentException("Може да изтриете само прегледи въведени днес");
+        }
+
         examinationRepository.delete(examination);
     }
 

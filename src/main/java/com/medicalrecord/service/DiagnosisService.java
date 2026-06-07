@@ -5,12 +5,13 @@ import com.medicalrecord.dto.diagnosis.DiagnosisResponse;
 import com.medicalrecord.enums.Specialty;
 
 import java.util.List;
+import java.util.Set;
 
 public interface DiagnosisService {
 
     List<DiagnosisResponse> getAllDiagnoses();
 
-    List<DiagnosisResponse> getDiagnosesBySpecialty(Specialty specialty);
+    List<DiagnosisResponse> getDiagnosesBySpecialties(Set<Specialty> specialties);
 
     DiagnosisResponse createDiagnosis(DiagnosisRequest request);
 

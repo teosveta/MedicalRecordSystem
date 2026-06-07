@@ -2,6 +2,7 @@ package com.medicalrecord.controller;
 
 import com.medicalrecord.dto.sickleave.SickLeaveRequest;
 import com.medicalrecord.dto.sickleave.SickLeaveResponse;
+import com.medicalrecord.dto.sickleave.UpdateSickLeaveRequest;
 import com.medicalrecord.service.SickLeaveService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -39,11 +40,21 @@ public class SickLeaveController {
                 .body(sickLeaveService.createSickLeave(request, authentication.getName()));
     }
 
-    // Само администраторът може да изтрива болнични листове
+    // ADMIN редактира всеки болничен лист; DOCTOR — само свои
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
+    public ResponseEntity<SickLeaveResponse> updateSickLeave(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateSickLeaveRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(sickLeaveService.updateSickLeave(id, request, authentication.getName()));
+    }
+
+    // ADMIN изтрива всеки болничен лист; DOCTOR — само свои, само от днес
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteSickLeave(@PathVariable Long id) {
-        sickLeaveService.deleteSickLeave(id);
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
+    public ResponseEntity<Void> deleteSickLeave(@PathVariable Long id, Authentication authentication) {
+        sickLeaveService.deleteSickLeave(id, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 }

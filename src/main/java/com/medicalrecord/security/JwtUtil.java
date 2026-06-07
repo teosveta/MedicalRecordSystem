@@ -30,7 +30,7 @@ public class JwtUtil {
                 .compact();
     }
 
-    // Извлича потребителското ime от токена
+    // Извлича потребителското име от токена
     public String extractUsername(String token) {
         return extractAllClaims(token).getSubject();
     }

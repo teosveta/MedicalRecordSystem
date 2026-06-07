@@ -2,10 +2,9 @@ package com.medicalrecord.controller;
 
 import com.medicalrecord.dto.diagnosis.DiagnosisRequest;
 import com.medicalrecord.dto.diagnosis.DiagnosisResponse;
-import com.medicalrecord.entity.Doctor;
-import com.medicalrecord.exception.ResourceNotFoundException;
-import com.medicalrecord.repository.DoctorRepository;
+import com.medicalrecord.dto.doctor.DoctorResponse;
 import com.medicalrecord.service.DiagnosisService;
+import com.medicalrecord.service.DoctorService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,11 +18,11 @@ import java.util.List;
 public class DiagnosisController {
 
     private final DiagnosisService diagnosisService;
-    private final DoctorRepository doctorRepository;
+    private final DoctorService doctorService;
 
-    public DiagnosisController(DiagnosisService diagnosisService, DoctorRepository doctorRepository) {
+    public DiagnosisController(DiagnosisService diagnosisService, DoctorService doctorService) {
         this.diagnosisService = diagnosisService;
-        this.doctorRepository = doctorRepository;
+        this.doctorService = doctorService;
     }
 
     // Всички роли имат достъп до списъка с диагнози
@@ -37,9 +36,8 @@ public class DiagnosisController {
     @GetMapping("/api/diagnoses/my-specialty")
     @PreAuthorize("hasRole('DOCTOR')")
     public ResponseEntity<List<DiagnosisResponse>> getDiagnosesByMySpecialty(Authentication auth) {
-        Doctor doctor = doctorRepository.findByUser_Username(auth.getName())
-                .orElseThrow(() -> new ResourceNotFoundException("Лекар", "username", auth.getName()));
-        return ResponseEntity.ok(diagnosisService.getDiagnosesBySpecialty(doctor.getSpecialty()));
+        DoctorResponse doctor = doctorService.getDoctorByUsername(auth.getName());
+        return ResponseEntity.ok(diagnosisService.getDiagnosesBySpecialties(doctor.getSpecialties()));
     }
 
     @PostMapping("/api/admin/diagnoses")

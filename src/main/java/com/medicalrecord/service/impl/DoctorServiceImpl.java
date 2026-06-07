@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -75,7 +76,8 @@ public class DoctorServiceImpl implements DoctorService {
         doctor.setFirstName(request.getFirstName());
         doctor.setLastName(request.getLastName());
         doctor.setUniqueIdentificationNumber(request.getUniqueIdentificationNumber());
-        doctor.setSpecialty(request.getSpecialty());
+        doctor.getSpecialties().clear();
+        doctor.getSpecialties().addAll(request.getSpecialties());
         doctor.setCanBeGP(request.isCanBeGP());
 
         return doctorMapper.toResponse(doctorRepository.save(doctor));
@@ -106,7 +108,7 @@ public class DoctorServiceImpl implements DoctorService {
                 .uniqueIdentificationNumber(request.getUniqueIdentificationNumber())
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
-                .specialty(request.getSpecialty())
+                .specialties(new HashSet<>(request.getSpecialties()))
                 .canBeGP(request.isCanBeGP())
                 .user(user)
                 .build();

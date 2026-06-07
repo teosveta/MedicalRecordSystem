@@ -86,7 +86,7 @@
 
         <!-- Пациенти -->
         <div class="tab-pane fade" id="patients-tab">
-            <h5 class="mb-3">Моите пациенти</h5>
+            <h5 class="mb-3">Пациенти</h5>
             <div id="patients-error" class="alert alert-danger d-none mb-2"></div>
             <div class="card">
                 <div class="card-body p-0">
@@ -129,10 +129,11 @@
                                 <th>Лекар</th>
                                 <th>Пациент</th>
                                 <th>Преглед</th>
+                                <th>Действия</th>
                             </tr>
                             </thead>
                             <tbody id="sick-tbody">
-                            <tr><td colspan="6" class="text-center text-muted py-3">Зареждане...</td></tr>
+                            <tr><td colspan="7" class="text-center text-muted py-3">Зареждане...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -216,9 +217,20 @@
                         <textarea class="form-control" id="exam-treatment" rows="2" required></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Цена (лв.) <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="exam-price" step="0.01" min="0.01" required readonly>
-                        <div class="form-text" id="exam-price-hint">(автоматично от специалността)</div>
+                        <label class="form-label">Тип консултация <span class="text-danger">*</span></label>
+                        <select class="form-select" id="exam-consultation-select" onchange="recalculatePrice()">
+                            <option value="">— изберете тип консултация —</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Допълнителни услуги</label>
+                        <div id="additional-services-list" class="border rounded p-2 bg-light">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Обща цена (лв.)</label>
+                        <input type="number" class="form-control" id="exam-price" step="0.01" readonly>
+                        <div class="form-text">Сума от консултацията и избраните допълнителни услуги</div>
                     </div>
                 </form>
             </div>
@@ -230,17 +242,18 @@
     </div>
 </div>
 
-<!-- ===== Модал: Нов болничен лист ===== -->
+<!-- ===== Модал: Нов / Редактиране на болничен лист ===== -->
 <div class="modal fade" id="sickLeaveModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Нов болничен лист</h5>
+                <h5 class="modal-title" id="sl-modal-title">Нов болничен лист</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div id="sl-modal-error" class="alert alert-danger d-none"></div>
                 <form id="sl-form">
+                    <input type="hidden" id="sl-id">
                     <div class="mb-3">
                         <label class="form-label">Преглед <span class="text-danger">*</span></label>
                         <select class="form-select" id="sl-exam" required>
@@ -285,11 +298,10 @@
                             <th>Дата</th>
                             <th>Диагноза</th>
                             <th>Лечение</th>
-                            <th>Цена</th>
                         </tr>
                         </thead>
                         <tbody id="med-record-exams">
-                        <tr><td colspan="5" class="text-center text-muted py-2">Зареждане...</td></tr>
+                        <tr><td colspan="4" class="text-center text-muted py-2">Зареждане...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -330,9 +342,11 @@
     let myPatients = [];
     let allPatients = [];
     let editingExamId = null;
+    let editingSickLeaveId = null;
+    let allSickLeaves = [];
     let statsBuilt = false;
     let specialtyLabels = {};
-    let feesCache = {};
+    let feeOptions = []; // Налични варианти за такса (специалност + допълнителни услуги)
 
     const monthNames = ['Януари','Февруари','Март','Април','Май','Юни',
         'Юли','Август','Септември','Октомври','Ноември','Декември'];
@@ -356,12 +370,52 @@
         specs.forEach(s => { specialtyLabels[s.value] = s.label; });
     }
 
-    // Зарежда таксите и ги кешира по специалност
-    async function loadFees() {
-        const r = await fetch('/api/examination-fees', {headers: authHeaders()});
+    // Зарежда наличните варианти за такса за текущия лекар
+    async function loadFeeOptions() {
+        const r = await fetch('/api/examination-fees/my-options', {headers: authHeaders()});
         if (!r.ok) return;
-        const fees = await r.json();
-        fees.forEach(f => { feesCache[f.specialty] = f.baseFee; });
+        feeOptions = await r.json();
+    }
+
+    // Попълва dropdown-а само с консултациите (SPECIALTY)
+    function refreshConsultationDropdown() {
+        const sel = document.getElementById('exam-consultation-select');
+        const specOpts = feeOptions.filter(o => o.group === 'SPECIALTY');
+        let html = '<option value="">— изберете тип консултация —</option>';
+        html += specOpts.map(o =>
+            `<option value="${o.fee}">${o.label} — ${parseFloat(o.fee).toFixed(2)} лв.</option>`
+        ).join('');
+        sel.innerHTML = html;
+    }
+
+    // Рендира checkboxes за допълнителните услуги (ADDITIONAL)
+    function renderAdditionalServices(checkedFees) {
+        const addlOpts = feeOptions.filter(o => o.group === 'ADDITIONAL');
+        const container = document.getElementById('additional-services-list');
+        if (!addlOpts.length) {
+            container.innerHTML = '<span class="text-muted small">Няма налични допълнителни услуги</span>';
+            return;
+        }
+        container.innerHTML = addlOpts.map((o, i) => {
+            const checked = checkedFees && checkedFees.includes(parseFloat(o.fee)) ? 'checked' : '';
+            return `<div class="form-check">
+                <input class="form-check-input additional-service-cb" type="checkbox"
+                    id="addl-cb-${i}" value="${o.fee}" ${checked} onchange="recalculatePrice()">
+                <label class="form-check-label" for="addl-cb-${i}">
+                    ${o.label} — ${parseFloat(o.fee).toFixed(2)} лв.
+                </label>
+            </div>`;
+        }).join('');
+    }
+
+    // Преизчислява общата цена = консултация + всички отметнати допълнителни услуги
+    function recalculatePrice() {
+        const consultFee = parseFloat(document.getElementById('exam-consultation-select').value) || 0;
+        let total = consultFee;
+        document.querySelectorAll('.additional-service-cb:checked').forEach(cb => {
+            total += parseFloat(cb.value) || 0;
+        });
+        document.getElementById('exam-price').value = total > 0 ? total.toFixed(2) : '';
     }
 
     // Зарежда профила на текущия лекар
@@ -370,9 +424,10 @@
         if (!r.ok) { if (r.status === 401) { logout(); } return; }
         const doc = await r.json();
         myDoctorId = doc.id;
-        mySpecialty = doc.specialty;
+        mySpecialty = (doc.specialties || [])[0];
+        const specialtyDisplay = (doc.specialties || []).map(s => specialtyLabels[s] || s).join(', ');
         document.getElementById('doctor-name-nav').textContent =
-            `Д-р ${doc.firstName} ${doc.lastName} (${specialtyLabels[doc.specialty] || doc.specialty})`;
+            `Д-р ${doc.firstName} ${doc.lastName} (${specialtyDisplay})`;
     }
 
     // Зарежда диагнозите за специалността на текущия лекар
@@ -402,6 +457,7 @@
             tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Няма прегледи</td></tr>';
             return;
         }
+        const today = todayStr();
         tbody.innerHTML = myExams.map((e, i) => `
             <tr>
                 <td>${i + 1}</td>
@@ -416,8 +472,9 @@
                 <td class="table-actions">
                     <button class="btn btn-outline-primary btn-xs me-1"
                             onclick="openEditExamModal(${e.id})">Редактиране</button>
-                    <button class="btn btn-outline-danger btn-xs"
-                            onclick="deleteExamination(${e.id})">Изтриване</button>
+                    ${e.examinationDate === today
+                        ? `<button class="btn btn-outline-danger btn-xs" onclick="deleteExamination(${e.id})">Изтриване</button>`
+                        : `<button class="btn btn-outline-danger btn-xs" disabled title="Може да изтриете само прегледи от днес">Изтриване</button>`}
                 </td>
             </tr>`
         ).join('');
@@ -431,13 +488,14 @@
             showError('sick-error', await getErrorMessage(r));
             return;
         }
-        const leaves = await r.json();
+        allSickLeaves = await r.json();
         const tbody = document.getElementById('sick-tbody');
-        if (!leaves.length) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Няма болнични листове</td></tr>';
+        if (!allSickLeaves.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Няма болнични листове</td></tr>';
             return;
         }
-        tbody.innerHTML = leaves.map((l, i) => `
+        const today = todayStr();
+        tbody.innerHTML = allSickLeaves.map((l, i) => `
             <tr>
                 <td>${i + 1}</td>
                 <td>${l.startDate}</td>
@@ -445,8 +503,28 @@
                 <td>${l.doctorName}</td>
                 <td>${l.patientName}</td>
                 <td>Преглед #${l.examinationId}</td>
+                <td class="table-actions">
+                    <button class="btn btn-outline-primary btn-xs me-1"
+                            onclick="openEditSickLeaveModal(${l.id})">Редактиране</button>
+                    ${l.startDate === today
+                        ? `<button class="btn btn-outline-danger btn-xs" onclick="deleteSickLeave(${l.id})">Изтрий</button>`
+                        : ''}
+                </td>
             </tr>
         `).join('');
+    }
+
+    // Изтрива болничен лист (само свой, само от днес)
+    async function deleteSickLeave(id) {
+        if (!confirm('Сигурни ли сте, че искате да изтриете този болничен лист?')) return;
+        const r = await fetch(`/api/sick-leaves/${id}`, {method: 'DELETE', headers: authHeaders()});
+        if (!r.ok) {
+            if (r.status === 401) { logout(); return; }
+            showError('sick-error', await getErrorMessage(r));
+            return;
+        }
+        hideError('sick-error');
+        loadSickLeaves();
     }
 
     // Зарежда всички пациенти от системата
@@ -484,18 +562,14 @@
         document.getElementById('exam-modal-title').textContent = 'Нов преглед';
         document.getElementById('exam-id').value = '';
         document.getElementById('exam-date').value = todayStr();
+        document.getElementById('exam-date').min = daysAgoStr(2);
         document.getElementById('exam-date').max = todayStr();
         document.getElementById('exam-patient').value = '';
         document.getElementById('exam-diagnosis').value = '';
         document.getElementById('exam-treatment').value = '';
-        // Цената се задава автоматично от сървъра — показваме я само информативно
-        document.getElementById('exam-price').value = (mySpecialty && feesCache[mySpecialty]) ? feesCache[mySpecialty] : '';
-        const hintEl = document.getElementById('exam-price-hint');
-        if (mySpecialty && feesCache[mySpecialty]) {
-            hintEl.textContent = `(автоматично от специалността: ${feesCache[mySpecialty]} лв.)`;
-        } else {
-            hintEl.textContent = '(автоматично от специалността)';
-        }
+        refreshConsultationDropdown();
+        renderAdditionalServices();
+        document.getElementById('exam-price').value = '';
         hideError('exam-modal-error');
         refreshPatientDropdown();
         refreshDiagnosisDropdown();
@@ -516,8 +590,9 @@
         document.getElementById('exam-patient').value = exam.patientId;
         document.getElementById('exam-diagnosis').value = exam.diagnosisId;
         document.getElementById('exam-treatment').value = exam.treatment;
-        document.getElementById('exam-price').value = exam.price;
-        document.getElementById('exam-price-hint').textContent = '(автоматично от специалността)';
+        refreshConsultationDropdown();
+        renderAdditionalServices();
+        document.getElementById('exam-price').value = exam.price ? parseFloat(exam.price).toFixed(2) : '';
         hideError('exam-modal-error');
         new bootstrap.Modal(document.getElementById('examModal')).show();
     }
@@ -568,13 +643,26 @@
 
     // Отваря модал за нов болничен лист
     function openNewSickLeaveModal() {
-        // Попълва dropdown само с прегледите на текущия лекар
-        const myExams = allExams.filter(e => e.doctorId === myDoctorId);
+        editingSickLeaveId = null;
+        document.getElementById('sl-modal-title').textContent = 'Нов болничен лист';
+        document.getElementById('sl-id').value = '';
+
+        const usedExamIds = new Set(allSickLeaves.map(l => l.examinationId));
+        const cutoff = daysAgoStr(7);
+        const eligibleExams = allExams.filter(e =>
+            e.doctorId === myDoctorId &&
+            !usedExamIds.has(e.id) &&
+            e.examinationDate >= cutoff
+        );
         const sel = document.getElementById('sl-exam');
         sel.innerHTML = '<option value="">— изберете преглед —</option>' +
-            myExams.map(e =>
+            eligibleExams.map(e =>
                 `<option value="${e.id}">${e.examinationDate} | ${e.patientName} | ${e.diagnosisCode}</option>`
             ).join('');
+        if (!eligibleExams.length) {
+            sel.innerHTML = '<option value="" disabled>Няма прегледи без болничен лист от последните 7 дни</option>';
+        }
+        sel.disabled = false;
 
         document.getElementById('sl-start-date').value = todayStr();
         document.getElementById('sl-start-date').max = todayStr();
@@ -584,7 +672,27 @@
         new bootstrap.Modal(document.getElementById('sickLeaveModal')).show();
     }
 
-    // Изпраща формата за болничен лист
+    // Отваря модал за редактиране на болничен лист
+    function openEditSickLeaveModal(id) {
+        const sl = allSickLeaves.find(l => l.id === id);
+        if (!sl) return;
+        editingSickLeaveId = id;
+        document.getElementById('sl-modal-title').textContent = 'Редактиране на болничен лист';
+        document.getElementById('sl-id').value = id;
+
+        const sel = document.getElementById('sl-exam');
+        sel.innerHTML = `<option value="${sl.examinationId}">Преглед #${sl.examinationId} | ${sl.patientName}</option>`;
+        sel.disabled = true;
+
+        document.getElementById('sl-start-date').value = sl.startDate;
+        document.getElementById('sl-start-date').max = todayStr();
+        document.getElementById('sl-start-date').min = daysAgoStr(2);
+        document.getElementById('sl-days').value = sl.numberOfDays;
+        hideError('sl-modal-error');
+        new bootstrap.Modal(document.getElementById('sickLeaveModal')).show();
+    }
+
+    // Изпраща формата за болничен лист (нов или редактиране)
     async function submitSickLeave() {
         hideError('sl-modal-error');
         const examinationId = parseInt(document.getElementById('sl-exam').value);
@@ -596,8 +704,12 @@
             return;
         }
 
-        const r = await fetch('/api/sick-leaves', {
-            method: 'POST',
+        const isEdit = editingSickLeaveId !== null;
+        const url = isEdit ? `/api/sick-leaves/${editingSickLeaveId}` : '/api/sick-leaves';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const r = await fetch(url, {
+            method,
             headers: authHeaders(),
             body: JSON.stringify({examinationId, startDate, numberOfDays})
         });
@@ -813,21 +925,20 @@
             : '<span class="text-muted">Няма пациенти</span>';
     }
 
-    // Зарежда пациентите на текущия лекар
-    async function loadMyPatients() {
-        const r = await fetch('/api/doctors/my-patients', {headers: authHeaders()});
-        if (!r.ok) {
-            if (r.status === 401) { logout(); return; }
-            showError('patients-error', await getErrorMessage(r));
-            return;
-        }
-        myPatients = await r.json();
+    // Рендира таблицата с пациентите на текущия лекар (тези, при които е правил преглед)
+    function loadMyPatients() {
         const tbody = document.getElementById('patients-tbody');
+        const myPatientIds = new Set(
+            allExams.filter(e => e.doctorId === myDoctorId).map(e => e.patientId)
+        );
+        const myPatients = allPatients.filter(p => myPatientIds.has(p.id));
         if (!myPatients.length) {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Няма пациенти</td></tr>';
             return;
         }
-        tbody.innerHTML = myPatients.map((p, i) => `
+        const sorted = [...myPatients].sort((a, b) =>
+            (a.lastName + a.firstName).localeCompare(b.lastName + b.firstName, 'bg'));
+        tbody.innerHTML = sorted.map((p, i) => `
             <tr>
                 <td>${i + 1}</td>
                 <td>${p.firstName} ${p.lastName}</td>
@@ -867,12 +978,11 @@
                             <td>${e.examinationDate}</td>
                             <td><strong>${e.diagnosisCode}</strong> ${e.diagnosisName}</td>
                             <td>${e.treatment}</td>
-                            <td>${e.price} лв.</td>
                         </tr>`).join('')
-                    : '<tr><td colspan="5" class="text-center text-muted py-2">Няма прегледи</td></tr>';
+                    : '<tr><td colspan="4" class="text-center text-muted py-2">Няма прегледи</td></tr>';
             } else {
                 document.getElementById('med-record-exams').innerHTML =
-                    '<tr><td colspan="5" class="text-center text-danger py-2">Грешка при зареждане на прегледите</td></tr>';
+                    '<tr><td colspan="4" class="text-center text-danger py-2">Грешка при зареждане на прегледите</td></tr>';
             }
 
             if (sickRes.ok) {
@@ -892,7 +1002,7 @@
             }
         } catch (err) {
             document.getElementById('med-record-exams').innerHTML =
-                '<tr><td colspan="5" class="text-center text-danger py-2">Грешка при свързване с сървъра</td></tr>';
+                '<tr><td colspan="4" class="text-center text-danger py-2">Грешка при свързване с сървъра</td></tr>';
             document.getElementById('med-record-sick').innerHTML =
                 '<tr><td colspan="4" class="text-center text-danger py-2">Грешка при свързване с сървъра</td></tr>';
         }
@@ -908,7 +1018,7 @@
     // Инициализация при зареждане на страницата
     async function init() {
         await loadSpecialties();
-        await loadFees();
+        await loadFeeOptions();
         await loadMyProfile();
         await loadDiagnoses();
         await loadAllPatients();

@@ -13,7 +13,7 @@ public class DoctorMapper {
         response.setUniqueIdentificationNumber(doctor.getUniqueIdentificationNumber());
         response.setFirstName(doctor.getFirstName());
         response.setLastName(doctor.getLastName());
-        response.setSpecialty(doctor.getSpecialty());
+        response.setSpecialties(doctor.getSpecialties());
         response.setCanBeGP(doctor.isCanBeGP());
         if (doctor.getUser() != null) {
             response.setEmail(doctor.getUser().getUsername());

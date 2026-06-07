@@ -1,6 +1,9 @@
 package com.medicalrecord.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -23,9 +26,12 @@ public class SickLeave {
     @JoinColumn(name = "examination_id", nullable = false)
     private Examination examination;
 
+    @NotNull(message = "Началната дата е задължителна")
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 
+    @Min(value = 1, message = "Броят дни трябва да бъде поне 1")
+    @Max(value = 30, message = "Болничният лист не може да е за повече от 30 дни")
     @Column(name = "number_of_days", nullable = false)
     private int numberOfDays;
 

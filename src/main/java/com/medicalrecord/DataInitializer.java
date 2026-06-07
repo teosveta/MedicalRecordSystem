@@ -13,7 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 // Инициализира базата с начални данни при стартиране на приложението
 @Component
@@ -26,6 +28,7 @@ public class DataInitializer implements CommandLineRunner {
     private final ExaminationRepository examinationRepository;
     private final SickLeaveRepository sickLeaveRepository;
     private final ExaminationFeeRepository examinationFeeRepository;
+    private final AdditionalServiceRepository additionalServiceRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(UserRepository userRepository,
@@ -35,6 +38,7 @@ public class DataInitializer implements CommandLineRunner {
                            ExaminationRepository examinationRepository,
                            SickLeaveRepository sickLeaveRepository,
                            ExaminationFeeRepository examinationFeeRepository,
+                           AdditionalServiceRepository additionalServiceRepository,
                            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.doctorRepository = doctorRepository;
@@ -43,6 +47,7 @@ public class DataInitializer implements CommandLineRunner {
         this.examinationRepository = examinationRepository;
         this.sickLeaveRepository = sickLeaveRepository;
         this.examinationFeeRepository = examinationFeeRepository;
+        this.additionalServiceRepository = additionalServiceRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -55,29 +60,57 @@ public class DataInitializer implements CommandLineRunner {
         }
         // Специалностите за диагнозите се сийдват при всяко стартиране ако липсват
         seedDiagnosisSpecialties();
+        // Специалностите за сийд-лекарите се поправят при всяко стартиране ако са празни
+        seedDoctorSpecialties();
+        // Допълнителните услуги се сийдват при всяко стартиране ако липсват
+        seedAdditionalServices();
+    }
+
+    private void seedAdditionalServices() {
+        if (additionalServiceRepository.count() > 0) return;
+        additionalServiceRepository.save(AdditionalService.builder()
+                .name("Вземане на кръвна проба").fee(new BigDecimal("15.00")).build());
+        additionalServiceRepository.save(AdditionalService.builder()
+                .name("Изпращане на материали за анализ").fee(new BigDecimal("20.00")).build());
+        additionalServiceRepository.save(AdditionalService.builder()
+                .name("ЕКГ").fee(new BigDecimal("25.00")).build());
+        additionalServiceRepository.save(AdditionalService.builder()
+                .name("Превръзка / манипулация").fee(new BigDecimal("10.00")).build());
     }
 
     private void seedDiagnosisSpecialties() {
-        diagnosisRepository.findByCode("Z00").ifPresent(z00 -> {
-            if (!z00.getSpecialties().isEmpty()) return; // вече сийднати
-
-            assignSpecialties("Z00", Specialty.values());
-            assignSpecialties("J06", Specialty.GP, Specialty.PEDIATRICIAN);
-            assignSpecialties("I10", Specialty.GP, Specialty.CARDIOLOGIST);
-            assignSpecialties("E11", Specialty.GP, Specialty.CARDIOLOGIST);
-            assignSpecialties("M54", Specialty.GP, Specialty.ORTHOPEDIST, Specialty.NEUROLOGIST);
-            assignSpecialties("J45", Specialty.GP, Specialty.CARDIOLOGIST, Specialty.PEDIATRICIAN);
-            assignSpecialties("K29", Specialty.GP, Specialty.SURGEON);
-            assignSpecialties("F32", Specialty.PSYCHIATRIST, Specialty.GP);
-            assignSpecialties("N30", Specialty.GP, Specialty.UROLOGIST);
-            assignSpecialties("A09", Specialty.GP, Specialty.PEDIATRICIAN);
-        });
+        assignSpecialties("Z00", Specialty.values());
+        assignSpecialties("J06", Specialty.GP, Specialty.PEDIATRICIAN);
+        assignSpecialties("I10", Specialty.GP, Specialty.CARDIOLOGIST);
+        assignSpecialties("E11", Specialty.GP, Specialty.CARDIOLOGIST);
+        assignSpecialties("M54", Specialty.GP, Specialty.ORTHOPEDIST, Specialty.NEUROLOGIST);
+        assignSpecialties("J45", Specialty.GP, Specialty.CARDIOLOGIST, Specialty.PEDIATRICIAN);
+        assignSpecialties("K29", Specialty.GP, Specialty.SURGEON);
+        assignSpecialties("F32", Specialty.PSYCHIATRIST, Specialty.GP);
+        assignSpecialties("N30", Specialty.GP, Specialty.UROLOGIST);
+        assignSpecialties("A09", Specialty.GP, Specialty.PEDIATRICIAN);
     }
 
     private void assignSpecialties(String code, Specialty... specialties) {
         diagnosisRepository.findByCode(code).ifPresent(d -> {
-            d.getSpecialties().addAll(Arrays.asList(specialties));
-            diagnosisRepository.save(d);
+            if (d.getSpecialties().addAll(Arrays.asList(specialties))) {
+                diagnosisRepository.save(d);
+            }
+        });
+    }
+
+    // Поправяме сийд-лекарите, чиято specialty е изгубена след миграцията към @ElementCollection
+    private void seedDoctorSpecialties() {
+        fixDoctorSpecialties("d.petrov@medical.com",   Specialty.GP);
+        fixDoctorSpecialties("d.ivanova@medical.com",  Specialty.CARDIOLOGIST);
+        fixDoctorSpecialties("d.georgiev@medical.com", Specialty.NEUROLOGIST);
+    }
+
+    private void fixDoctorSpecialties(String username, Specialty... specialties) {
+        doctorRepository.findByUser_Username(username).ifPresent(d -> {
+            if (d.getSpecialties().addAll(Arrays.asList(specialties))) {
+                doctorRepository.save(d);
+            }
         });
     }
 
@@ -123,26 +156,26 @@ public class DataInitializer implements CommandLineRunner {
         // 3. Лекари
         // =============================================
         Doctor doctorPetrov = Doctor.builder()
-                .uniqueIdentificationNumber("DR001")
+                .uniqueIdentificationNumber("1000000001")
                 .firstName("Димитър")
                 .lastName("Петров")
-                .specialty(Specialty.GP)
+                .specialties(new HashSet<>(Set.of(Specialty.GP)))
                 .canBeGP(true)
                 .user(userPetrov)
                 .build();
         Doctor doctorIvanova = Doctor.builder()
-                .uniqueIdentificationNumber("DR002")
+                .uniqueIdentificationNumber("1000000002")
                 .firstName("Мария")
                 .lastName("Иванова")
-                .specialty(Specialty.CARDIOLOGIST)
+                .specialties(new HashSet<>(Set.of(Specialty.CARDIOLOGIST)))
                 .canBeGP(true)
                 .user(userIvanova)
                 .build();
         Doctor doctorGeorgiev = Doctor.builder()
-                .uniqueIdentificationNumber("DR003")
+                .uniqueIdentificationNumber("1000000003")
                 .firstName("Георги")
                 .lastName("Георгиев")
-                .specialty(Specialty.NEUROLOGIST)
+                .specialties(new HashSet<>(Set.of(Specialty.NEUROLOGIST)))
                 .canBeGP(false)
                 .user(userGeorgiev)
                 .build();

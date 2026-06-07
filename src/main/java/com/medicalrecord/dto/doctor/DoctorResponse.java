@@ -4,6 +4,8 @@ import com.medicalrecord.enums.Specialty;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Set;
+
 @Getter
 @Setter
 public class DoctorResponse {
@@ -12,7 +14,7 @@ public class DoctorResponse {
     private String uniqueIdentificationNumber;
     private String firstName;
     private String lastName;
-    private Specialty specialty;
+    private Set<Specialty> specialties;
     private boolean canBeGP;
     private String email;
 }

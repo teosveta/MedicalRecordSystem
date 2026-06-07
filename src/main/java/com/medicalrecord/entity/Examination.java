@@ -1,6 +1,10 @@
 package com.medicalrecord.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -19,6 +23,7 @@ public class Examination {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull(message = "Датата на прегледа е задължителна")
     @Column(name = "examination_date", nullable = false)
     private LocalDate examinationDate;
 
@@ -34,9 +39,13 @@ public class Examination {
     @JoinColumn(name = "diagnosis_id", nullable = false)
     private Diagnosis diagnosis;
 
+    @NotBlank(message = "Лечението е задължително")
+    @Size(max = 2000, message = "Описанието на лечението не може да надвишава 2000 символа")
     @Column(name = "treatment", columnDefinition = "TEXT")
     private String treatment;
 
+    @NotNull(message = "Цената е задължителна")
+    @DecimalMin(value = "0.01", message = "Цената трябва да бъде положително число")
     @Column(name = "price", nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 

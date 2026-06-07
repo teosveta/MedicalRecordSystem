@@ -182,6 +182,26 @@ public class PatientServiceImpl implements PatientService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<ExaminationResponse> getPatientExaminationsById(Long patientId) {
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Пациент", "id", patientId));
+        return examinationRepository.findByPatient(patient).stream()
+                .map(examinationMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SickLeaveResponse> getPatientSickLeavesById(Long patientId) {
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Пациент", "id", patientId));
+        return sickLeaveRepository.findByPatient(patient).stream()
+                .map(sickLeaveMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public PatientHistoryResponse getPatientHistory(String username) {
         Patient patient = patientRepository.findByUser_Username(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Пациент", "username", username));

@@ -5,6 +5,7 @@ import com.medicalrecord.dto.doctor.DoctorResponse;
 import com.medicalrecord.dto.examination.ExaminationResponse;
 import com.medicalrecord.dto.patient.PatientResponse;
 import com.medicalrecord.dto.statistics.DoctorCountResponse;
+import com.medicalrecord.dto.statistics.IdCountRow;
 import com.medicalrecord.dto.statistics.MonthStatisticsResponse;
 import com.medicalrecord.dto.statistics.PaymentByDoctorResponse;
 import com.medicalrecord.entity.Diagnosis;
@@ -75,12 +76,11 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     @Override
     public DiagnosisResponse getMostCommonDiagnosis() {
-        List<Object[]> results = examinationRepository.countByDiagnosis();
+        List<IdCountRow> results = examinationRepository.countByDiagnosis();
         if (results.isEmpty()) {
             throw new ResourceNotFoundException("Диагноза", "брой прегледи", "0");
         }
-        // Първият елемент е с най-висок брой прегледи (ORDER BY DESC)
-        Long diagnosisId = ((Number) results.get(0)[0]).longValue();
+        Long diagnosisId = results.get(0).id();
         Diagnosis diagnosis = diagnosisRepository.findById(diagnosisId)
                 .orElseThrow(() -> new ResourceNotFoundException("Диагноза", "id", diagnosisId));
         return diagnosisMapper.toResponse(diagnosis);
@@ -103,59 +103,17 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     @Override
     public List<PaymentByDoctorResponse> getPatientPaymentsByDoctor() {
-        return examinationRepository.sumPaymentsByDoctor().stream()
-                .map(row -> {
-                    Long doctorId = ((Number) row[0]).longValue();
-                    BigDecimal total = (BigDecimal) row[1];
-                    Doctor doctor = doctorRepository.findById(doctorId).orElse(null);
-
-                    PaymentByDoctorResponse response = new PaymentByDoctorResponse();
-                    response.setDoctorId(doctorId);
-                    response.setTotalAmount(total);
-                    if (doctor != null) {
-                        response.setDoctorName(doctor.getFirstName() + " " + doctor.getLastName());
-                    }
-                    return response;
-                })
-                .collect(Collectors.toList());
+        return examinationRepository.sumAllPaymentsByDoctor();
     }
 
     @Override
     public List<DoctorCountResponse> getPatientsCountPerGP() {
-        return patientRepository.countPatientsByPersonalDoctor().stream()
-                .map(row -> {
-                    Long doctorId = ((Number) row[0]).longValue();
-                    long count = ((Number) row[1]).longValue();
-                    Doctor doctor = doctorRepository.findById(doctorId).orElse(null);
-
-                    DoctorCountResponse response = new DoctorCountResponse();
-                    response.setDoctorId(doctorId);
-                    response.setCount(count);
-                    if (doctor != null) {
-                        response.setDoctorName(doctor.getFirstName() + " " + doctor.getLastName());
-                    }
-                    return response;
-                })
-                .collect(Collectors.toList());
+        return patientRepository.countPatientsByPersonalDoctor();
     }
 
     @Override
     public List<DoctorCountResponse> getVisitsPerDoctor() {
-        return examinationRepository.countByDoctor().stream()
-                .map(row -> {
-                    Long doctorId = ((Number) row[0]).longValue();
-                    long count = ((Number) row[1]).longValue();
-                    Doctor doctor = doctorRepository.findById(doctorId).orElse(null);
-
-                    DoctorCountResponse response = new DoctorCountResponse();
-                    response.setDoctorId(doctorId);
-                    response.setCount(count);
-                    if (doctor != null) {
-                        response.setDoctorName(doctor.getFirstName() + " " + doctor.getLastName());
-                    }
-                    return response;
-                })
-                .collect(Collectors.toList());
+        return examinationRepository.countByDoctor();
     }
 
     @Override
@@ -170,26 +128,20 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     @Override
     public MonthStatisticsResponse getMonthWithMostSickLeaves() {
-        List<Object[]> results = sickLeaveRepository.findMonthWithMostSickLeaves();
+        List<MonthStatisticsResponse> results = sickLeaveRepository.findMonthWithMostSickLeaves();
         if (results.isEmpty()) {
             throw new ResourceNotFoundException("Болничен лист", "брой", "0");
         }
-        // Резултатите са наредени по брой — вземаме първия
-        Object[] row = results.get(0);
-        MonthStatisticsResponse response = new MonthStatisticsResponse();
-        response.setMonth(((Number) row[0]).intValue());
-        response.setYear(((Number) row[1]).intValue());
-        response.setCount(((Number) row[2]).longValue());
-        return response;
+        return results.get(0);
     }
 
     @Override
     public DoctorResponse getDoctorWithMostSickLeaves() {
-        List<Object[]> results = sickLeaveRepository.countByDoctor();
+        List<IdCountRow> results = sickLeaveRepository.countByDoctor();
         if (results.isEmpty()) {
             throw new ResourceNotFoundException("Лекар", "болнични листове", "0");
         }
-        Long doctorId = ((Number) results.get(0)[0]).longValue();
+        Long doctorId = results.get(0).id();
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Лекар", "id", doctorId));
         return doctorMapper.toResponse(doctor);

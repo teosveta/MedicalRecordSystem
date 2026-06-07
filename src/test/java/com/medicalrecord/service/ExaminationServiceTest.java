@@ -60,7 +60,6 @@ class ExaminationServiceTest {
         when(doctorRepository.findByUser_Username("doctor@test.com")).thenReturn(Optional.of(doctor));
         when(patientRepository.findById(1L)).thenReturn(Optional.of(patient));
         when(diagnosisRepository.findById(1L)).thenReturn(Optional.of(diagnosis));
-        when(examinationFeeRepository.findBySpecialty(any())).thenReturn(Optional.empty());
         when(examinationRepository.save(any(Examination.class))).thenReturn(savedExam);
         when(examinationMapper.toResponse(any())).thenReturn(null);
 
@@ -93,7 +92,6 @@ class ExaminationServiceTest {
         when(doctorRepository.findByUser_Username("doctor@test.com")).thenReturn(Optional.of(doctor));
         when(patientRepository.findById(1L)).thenReturn(Optional.of(patient));
         when(diagnosisRepository.findById(1L)).thenReturn(Optional.of(diagnosis));
-        when(examinationFeeRepository.findBySpecialty(any())).thenReturn(Optional.empty());
         when(examinationRepository.save(any(Examination.class))).thenReturn(savedExam);
         when(examinationMapper.toResponse(any())).thenReturn(null);
 

@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,8 +40,20 @@ public class DiagnosisServiceImpl implements DiagnosisService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<DiagnosisResponse> getDiagnosesBySpecialty(Specialty specialty) {
-        List<Diagnosis> diagnoses = new ArrayList<>(diagnosisRepository.findBySpecialtiesContaining(specialty));
+    public List<DiagnosisResponse> getDiagnosesBySpecialties(Set<Specialty> specialties) {
+        // ОПЛ е общопрактикуващ — може да използва всяка диагноза
+        if (specialties.contains(Specialty.GP)) {
+            return diagnosisRepository.findAll().stream()
+                    .map(diagnosisMapper::toResponse)
+                    .collect(Collectors.toList());
+        }
+
+        // Обединяваме диагнозите за всички специалности на лекаря (без дублирания)
+        Set<Diagnosis> diagnosisSet = new LinkedHashSet<>();
+        for (Specialty specialty : specialties) {
+            diagnosisSet.addAll(diagnosisRepository.findBySpecialtiesContaining(specialty));
+        }
+        List<Diagnosis> diagnoses = new ArrayList<>(diagnosisSet);
         // Добавяме Z00 ако не е включена (видима за всички специалности)
         boolean hasZ00 = diagnoses.stream().anyMatch(d -> "Z00".equals(d.getCode()));
         if (!hasZ00) {

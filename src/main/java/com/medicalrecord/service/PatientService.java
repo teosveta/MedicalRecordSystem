@@ -1,8 +1,10 @@
 package com.medicalrecord.service;
 
+import com.medicalrecord.dto.examination.ExaminationResponse;
 import com.medicalrecord.dto.patient.PatientHistoryResponse;
 import com.medicalrecord.dto.patient.PatientRequest;
 import com.medicalrecord.dto.patient.PatientResponse;
+import com.medicalrecord.dto.sickleave.SickLeaveResponse;
 
 import java.util.List;
 
@@ -19,4 +21,8 @@ public interface PatientService {
     PatientResponse assignPersonalDoctor(Long patientId, Long doctorId);
 
     PatientHistoryResponse getPatientHistory(String username);
+
+    List<ExaminationResponse> getPatientExaminationsById(Long patientId);
+
+    List<SickLeaveResponse> getPatientSickLeavesById(Long patientId);
 }
